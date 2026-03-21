@@ -1,0 +1,107 @@
+[project]
+name = "calorie-tracker-engsoft"
+version = "0.0.1"
+description = "calorie-tracker-engsoft"
+license = { text = "MIT" }
+authors = [
+  { name = "Thallys Torres", email = "thallys.auugusto.torres@gmail.com" },
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "ruff",
+  "pyright",
+  "pytest",
+  "pytest-xdist",
+  "pytest-django",
+  "pytest-asyncio",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+fix = true
+show-fixes = true
+indent-width = 4
+exclude = ["venv", ".venv", "env", ".env", "node_modules", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+  "ASYNC",
+  "A",
+  "ANN",
+  "B",
+  "BLE",
+  "C4",
+  "C90",
+  "COM",
+  "E",
+  "EM",
+  "ERA",
+  "EXE",
+  "F",
+  "FBT",
+  "FIX",
+  "I",
+  "ICN",
+  "ISC",
+  "Q",
+  "RET",
+  "RSE",
+  "S",
+  "SIM",
+  "SLF",
+  "T10",
+  "T20",
+  "TC",
+  "TD",
+  "TRY",
+  "UP",
+  "W",
+  "YTT",
+  "RUF",
+  "N",
+]
+ignore = ["T201", "COM812", "ISC001", "ANN"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+# [tool.ruff.lint.isort]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.12"
+include = ["src", "tests"]
+exclude = [
+  "**/venv",
+  "**/.venv",
+  "**/env",
+  "**/.env",
+  "**/node_modules",
+  "**/__pycache__",
+]
+
+venv = ".venv"
+venvPath = "."
+
+[tool.pytest.ini_options]
+addopts = "-s --color=yes --tb=short"
+pythonpath = ["src"]
+testpaths = ["tests"]
+DJANGO_SETTINGS_MODULE = "core.settings.dev"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+
+package-dir = { "" = "src" }
