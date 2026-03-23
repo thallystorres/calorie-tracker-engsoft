@@ -2,15 +2,24 @@
 name = "calorie-tracker-engsoft"
 version = "0.0.1"
 description = "calorie-tracker-engsoft"
-license = { text = "MIT" }
 authors = [
   { name = "Thallys Torres", email = "thallys.auugusto.torres@gmail.com" },
 ]
-requires-python = ">=3.12"
-dependencies = []
+requires-python = ">=3.13"
+dependencies = [
+  "django>=5.2,<6.0",
+  "psycopg[binary]>=3.2",
+  "redis>=5.2",
+  "celery[redis]>=5.4",
+  "djangorestframework>=3.15,<3.16",
+  "django-celery-results>=2.5",
+  "gunicorn>=23.0",
+  "python-dotenv>=1.2.2",
+]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
+    "debugpy>=1.8.20",
   "ruff",
   "pyright",
   "pytest",
@@ -24,7 +33,7 @@ where = ["src"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py312"
+target-version = "py313"
 fix = true
 show-fixes = true
 indent-width = 4
@@ -67,7 +76,7 @@ select = [
   "RUF",
   "N",
 ]
-ignore = ["T201", "COM812", "ISC001", "ANN"]
+ignore = ["T201", "COM812", "ISC001", "ANN", "Q000"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -78,15 +87,14 @@ line-ending = "lf"
 
 [tool.pyright]
 typeCheckingMode = "standard"
-pythonVersion = "3.12"
+pythonVersion = "3.13"
 include = ["src", "tests"]
 exclude = [
   "**/venv",
-  "**/.venv",
   "**/env",
-  "**/.env",
   "**/node_modules",
   "**/__pycache__",
+  "**/.*",
 ]
 
 venv = ".venv"
@@ -101,6 +109,9 @@ DJANGO_SETTINGS_MODULE = "core.settings.dev"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = false
 
 [tool.setuptools]
 

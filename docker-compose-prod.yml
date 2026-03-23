@@ -1,0 +1,15 @@
+services:
+  web:
+    build:
+      target: prod
+    volumes: []
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 -workers 4
+    environment:
+      - UV_NO_DEV=1
+      - UV_COMPILE_BYTECODE=1
+
+  celery:
+    build:
+      target: prod
+    volumes: []
+    command: celery -A core worker -l info --concurrency 4
