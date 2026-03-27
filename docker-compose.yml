@@ -8,9 +8,12 @@ services:
     ports:
       - 8000:8000
     volumes:
-      - ./src:app/src
+      - ./src:/app/src
+    environment:
+      - PYTHONPATH=/app/src
     env_file:
       - .env
+    command: ["python", "src/manage.py", "runserver", "0.0.0.0:8000"]
     depends_on:
       db:
         condition: service_healthy
@@ -25,9 +28,12 @@ services:
     build:
       context: .
       target: dev
-    command: celery -A core worker -l info
+    environment:
+      - PYTHONPATH=/app/src
     env_file:
       - .env
+    volumes:
+      - ./src:/app/src
     depends_on:
       db:
         condition: service_healthy
@@ -35,6 +41,7 @@ services:
       redis:
         condition: service_healthy
         restart: true
+    command: ["celery", "-A", "core.celery:app", "worker", "--loglevel=info"]
 
   ##############################################################################
 

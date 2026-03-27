@@ -12,4 +12,4 @@ services:
     build:
       target: prod
     volumes: []
-    command: celery -A core worker -l info --concurrency 4
+    command: celery -A core.celery:app worker -l info --concurrency 4

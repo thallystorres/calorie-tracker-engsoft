@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Diretório de trabalho
 WORKDIR /app
-
+ENV PATH="/app/.venv/bin:$PATH"
 # --- stage de dependências ---
 FROM base AS dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -24,7 +24,6 @@ FROM base AS prod
 COPY --from=dependencies /app/.venv /app/.venv
 COPY . /app
 EXPOSE 8000
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
 
 # --- desenvolvimento ---
 FROM base AS dev
@@ -32,4 +31,3 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 EXPOSE 8000
-CMD [ "python", "manage.py", "runserver", "0.0.0.0:8000" ]
