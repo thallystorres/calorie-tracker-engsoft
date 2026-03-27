@@ -10,7 +10,7 @@ dependencies = [
   "django>=5.2,<6.0",
   "psycopg[binary]>=3.2",
   "redis>=5.2",
-  "celery[redis]>=5.4",
+  "celery>=5.4",
   "djangorestframework>=3.15,<3.16",
   "django-celery-results>=2.5",
   "gunicorn>=23.0",
@@ -20,12 +20,12 @@ dependencies = [
 [dependency-groups]
 dev = [
     "debugpy>=1.8.20",
-  "ruff",
-  "pyright",
-  "pytest",
-  "pytest-xdist",
-  "pytest-django",
-  "pytest-asyncio",
+    "ruff",
+    "pyright",
+    "pytest",
+    "pytest-xdist",
+    "pytest-django",
+    "pytest-asyncio",
 ]
 
 [tool.setuptools.packages.find]
