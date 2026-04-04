@@ -18,6 +18,7 @@ ALLOWED_HOSTS = [
 
 # Apps
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -25,6 +26,17 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
+
+JAZZMIN_SETTINGS = {
+    "site_title": "CalorAI",
+    "site_header": "Contador de calorias inteligente",
+    "site_brand": "CalorAI",
+    "welcome_sign": "Bem-vindo ao CalorIA",
+    "copyright": "UFRN",
+    "search_model": ["auth.User", "auth.Group"],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
