@@ -40,5 +40,15 @@ class AccountLoginView(APIView):
         login(request, user)  # type: ignore
 
         return Response(
-            {"detail": "Login realizado com sucesso"}, status=status.HTTP_200_OK
+            {"detail": "Login realizado com sucesso."}, status=status.HTTP_200_OK
+        )
+
+
+class AccountLogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        logout(request)  # type: ignore
+        return Response(
+            {"detail:Logout realizado com sucesso."}, status=status.HTTP_200_OK
         )
