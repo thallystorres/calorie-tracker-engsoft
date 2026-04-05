@@ -1,11 +1,20 @@
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from .repositories import UserRepository
 
 
+def _run_password_validators(password: str, user: User | None = None) -> None:
+    try:
+        validate_password(password=password, user=user)
+    except DjangoValidationError as e:
+        raise serializers.ValidationError(e.messages)
+
+
 class AccountRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -27,9 +36,21 @@ class AccountRegisterSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value: str) -> str:
         msg = "E-mail já está em uso"
-        if UserRepository.exists_by_email(value):
+        email = value.strip().lower()
+        if UserRepository.exists_by_email(email):
             raise serializers.ValidationError(msg)
-        return value
+        return email
+
+    def validate(self, attrs: dict[str, str]) -> dict[str, str]:
+        if attrs["password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "As senhas não conferem."}
+            )
+
+        attrs.pop("confirm_password")
+        _run_password_validators(attrs["password"], User(**attrs))
+
+        return attrs
 
 
 class AccountSerializer(serializers.ModelSerializer):

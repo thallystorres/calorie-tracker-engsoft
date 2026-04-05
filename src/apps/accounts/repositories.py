@@ -8,7 +8,7 @@ class UserRepository:
 
     @staticmethod
     def exists_by_email(email: str) -> bool:
-        return User.objects.filter(email_iexact=email).exists()
+        return User.objects.filter(email__iexact=email).exists()
 
     @staticmethod
     def create_user(
