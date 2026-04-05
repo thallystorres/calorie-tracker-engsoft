@@ -1,7 +1,11 @@
+from typing import Any
+
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+
+from src.apps.accounts.services import UserService
 
 from .repositories import UserRepository
 
@@ -68,3 +72,18 @@ class AccountSerializer(serializers.ModelSerializer):
         if User.objects.exclude(id=user.id).filter(email__iexact=email).exists():
             raise serializers.ValidationError(msg)
         return email
+
+
+class AccountLoginSerializer(serializers.Serializer):
+    username_or_email = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        username_or_email = attrs["username_or_email"].strip()
+        password = attrs["password"]
+
+        user = UserService.authenticate_account(
+            username_or_email=username_or_email, password=password
+        )
+        attrs["user"] = user
+        return attrs
