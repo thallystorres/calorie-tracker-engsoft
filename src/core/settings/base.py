@@ -18,6 +18,9 @@ ALLOWED_HOSTS = [
 
 # Apps
 INSTALLED_APPS = [
+    "rest_framework",
+    "rest_framework.authtoken",
+    "apps.accounts",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -106,3 +109,11 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # ID padrão
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+}
