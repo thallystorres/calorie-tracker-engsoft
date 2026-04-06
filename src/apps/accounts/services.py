@@ -11,21 +11,34 @@ from rest_framework.exceptions import AuthenticationFailed, ValidationError
 
 from .repositories import UserRepository
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    filename="kraken_sitac.log",
+    format="%(asctime)s - %(message)s",
+    datefmt="%d/%m/%Y %I:%M:%S %p",
+    encoding="utf-8",
+    level=logging.INFO,
+)
 
 
 class UserService:
     @staticmethod
     def create_account(validated_data: dict[str, Any], request=None) -> User:
         user = UserRepository.create_user(**validated_data)
-        try:
-            token = ActivationTokenService.generate(user)
-            EmailService.send_activation_email(user=user, token=token, request=request)
-        except Exception:
-            logger.exception(
-                "Falha ao enviar e-mail de ativacao para user_pk=%s", user.pk
-            )
+        UserService.send_email_activation(user, request)
         return user
+
+    @staticmethod
+    def update_account_profile(
+        *, user: User, validated_data: dict[str, Any], request=None
+    ) -> tuple[User, bool]:
+        old_email = (user.email or "").strip().lower()
+        user = UserRepository.update_user(user=user, data=validated_data)
+
+        email_changed = UserService._email_changed(user=user, old_email=old_email)
+        if email_changed:
+            UserService._handle_email_change(user=user, request=request)
+
+        return user, email_changed
 
     @staticmethod
     def authenticate_account(*, username_or_email: str, password: str):
@@ -42,8 +55,24 @@ class UserService:
         return user
 
     @staticmethod
-    def update_account_profile(*, user: User, validated_data: dict[str, Any]) -> User:
-        return UserRepository.update_user(user=user, data=validated_data)
+    def _email_changed(*, user: User, old_email: str) -> bool:
+        new_email = (user.email or "").strip().lower()
+        return old_email != new_email
+
+    @staticmethod
+    def _handle_email_change(*, user: User, request=None) -> None:
+        UserRepository.deactivate(user)
+        UserService.send_email_activation(user, request)
+
+    @staticmethod
+    def send_email_activation(user: User, request=None):
+        try:
+            token = ActivationTokenService.generate(user)
+            EmailService.send_activation_email(user=user, token=token, request=request)
+        except Exception:
+            logging.exception(
+                "Falha ao enviar e-mail de ativacao para user_pk=%s", user.pk
+            )
 
     @staticmethod
     def activate_account(token: str) -> User:

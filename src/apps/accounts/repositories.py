@@ -40,6 +40,11 @@ class UserRepository:
         user.save()
 
     @staticmethod
+    def deactivate(user: User) -> None:
+        user.is_active = False
+        user.save()
+
+    @staticmethod
     def update_user(*, user: User, data: dict[str, Any]) -> User:
         update_fields = ("email", "first_name", "last_name")
         for field in update_fields:
