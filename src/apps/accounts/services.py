@@ -20,3 +20,7 @@ class UserService:
             raise AuthenticationFailed(msg)
 
         return user
+
+    @staticmethod
+    def update_account_profile(*, user: User, validated_data: dict[str, Any]) -> User:
+        return UserRepository.update_user(user=user, data=validated_data)

@@ -39,7 +39,7 @@ class AccountRegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value: str) -> str:
-        msg = "E-mail já está em uso"
+        msg = "E-mail já está em uso."
         email = value.strip().lower()
         if UserRepository.exists_by_email(email):
             raise serializers.ValidationError(msg)
@@ -69,7 +69,7 @@ class AccountSerializer(serializers.ModelSerializer):
         user = self.instance
         if user is None:
             return email
-        if User.objects.exclude(id=user.id).filter(email__iexact=email).exists():
+        if UserRepository.exists_by_email(email, user.id):
             raise serializers.ValidationError(msg)
         return email
 
