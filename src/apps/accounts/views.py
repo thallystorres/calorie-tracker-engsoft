@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from src.apps.accounts.services import UserService
 
 from .serializers import (
+    AccountDeleteSerializer,
     AccountLoginSerializer,
     AccountRegisterSerializer,
     AccountSerializer,
@@ -75,6 +76,15 @@ class AccountMeView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+    def delete(self, request: Request) -> Response:
+        serializer = AccountDeleteSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        UserService.delete_account(user=request.user)
+        logout(request)  # type:ignore
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AccountLoginView(APIView):

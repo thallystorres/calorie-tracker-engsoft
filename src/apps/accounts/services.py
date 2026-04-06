@@ -43,14 +43,10 @@ class UserService:
     @staticmethod
     def authenticate_account(*, username_or_email: str, password: str):
         invalid_credentials_msg = "Credenciais inválidas."
-        not_active_msg = "Conta não verificada. Verifique seu e-mail para ativar"
         user = UserRepository.get_by_username_or_email(username_or_email)
 
-        if user is None or not user.check_password(password):
+        if user is None or not user.check_password(password) or not user.is_active:
             raise AuthenticationFailed(invalid_credentials_msg)
-
-        if not user.is_active:
-            raise AuthenticationFailed(not_active_msg)
 
         return user
 
@@ -90,6 +86,13 @@ class UserService:
 
         UserRepository.activate(user)
         return user
+
+    @staticmethod
+    def delete_account(*, user: User) -> None:
+        if not user.is_active:
+            return
+        UserRepository.deactivate(user)
+        logging.info("Conta desativada via soft delete. user_pk=%s", user.pk)
 
 
 class ActivationTokenService:

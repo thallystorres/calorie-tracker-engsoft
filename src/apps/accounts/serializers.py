@@ -87,3 +87,19 @@ class AccountLoginSerializer(serializers.Serializer):
         )
         attrs["user"] = user
         return attrs
+
+
+class AccountDeleteSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True)
+
+    def validate_password(self, value: str):
+        request = self.context["request"]
+        user = getattr(request, "user", None)
+
+        if user is None or not user.is_authenticated:
+            raise serializers.ValidationError("Usuário não autenticado.")
+
+        if not user.check_password(value):
+            raise serializers.ValidationError("Senha incorreta.")
+
+        return value
