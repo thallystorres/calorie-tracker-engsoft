@@ -2,6 +2,7 @@ from typing import Any, cast
 
 from django.contrib.auth import login, logout
 from rest_framework import permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -28,9 +29,18 @@ class AccountRegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
 
-        user = UserService.create_account(validated_data=validated_data)
+        user = UserService.create_account(
+            validated_data=validated_data, request=request
+        )
+
         output = AccountSerializer(user)
-        return Response(output.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "detail": "Conta criada com sucesso. Verifique seu e-mail para ativar.",
+                "user": output.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class AccountMeView(APIView):
@@ -75,4 +85,27 @@ class AccountLogoutView(APIView):
         logout(request)  # type: ignore
         return Response(
             {"detail:Logout realizado com sucesso."}, status=status.HTTP_200_OK
+        )
+
+
+class AccountActivateView(APIView):
+    permission_classes = [IsNotAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        token = request.query_params.get("token", "").strip()
+
+        if not token:
+            return Response(
+                {"detail": "Token de ativação ausente."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            UserService.activate_account(token)
+        except ValidationError as e:
+            return Response({"detail": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"detail": "Conta ativada com sucesso."},
+            status=status.HTTP_200_OK,
         )

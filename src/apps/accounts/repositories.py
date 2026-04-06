@@ -16,6 +16,10 @@ class UserRepository:
         return qs.exists()
 
     @staticmethod
+    def get_by_user_id(user_id: int) -> User | None:
+        return User.objects.filter(pk=user_id).first()
+
+    @staticmethod
     def get_by_username(username: str) -> User | None:
         return User.objects.filter(username=username).first()
 
@@ -29,6 +33,11 @@ class UserRepository:
         if user is not None:
             return user
         return UserRepository.get_by_email(identifier)
+
+    @staticmethod
+    def activate(user: User) -> None:
+        user.is_active = True
+        user.save()
 
     @staticmethod
     def update_user(*, user: User, data: dict[str, Any]) -> User:
@@ -49,4 +58,5 @@ class UserRepository:
             first_name=first_name,
             last_name=last_name,
             password=password,
+            is_active=False,
         )
