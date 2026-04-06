@@ -56,7 +56,7 @@ class AccountMeView(APIView):
         serializer = AccountSerializer(request_user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
-        user, email_changed = UserService.update_account_profile(
+        user, email_changed = UserService.update_account(
             user=request_user, validated_data=validated_data, request=request
         )
 

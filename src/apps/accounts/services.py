@@ -28,7 +28,7 @@ class UserService:
         return user
 
     @staticmethod
-    def update_account_profile(
+    def update_account(
         *, user: User, validated_data: dict[str, Any], request=None
     ) -> tuple[User, bool]:
         old_email = (user.email or "").strip().lower()
@@ -64,7 +64,7 @@ class UserService:
     def send_email_activation(user: User, request=None):
         try:
             token = ActivationTokenService.generate(user)
-            EmailService.send_activation_email(user=user, token=token, request=request)
+            ActivationEmailService.send_email(user=user, token=token, request=request)
         except Exception:
             logging.exception(
                 "Falha ao enviar e-mail de ativacao para user_pk=%s", user.pk
@@ -95,70 +95,134 @@ class UserService:
         logging.info("Conta desativada via soft delete. user_pk=%s", user.pk)
 
 
-class ActivationTokenService:
-    _signer = TimestampSigner(salt=settings.ACCOUNT_ACTIVATION_SALT)
+class BaseSignedTokenService:
+    signer_salt_setting: str
+    max_age_setting: str
+    signature_expired_msg: str
+    bad_signature_msg: str
+    malformed_msg: str
 
-    @staticmethod
-    def generate(user: User) -> str:
+    @classmethod
+    def signer(cls) -> TimestampSigner:
+        return TimestampSigner(salt=getattr(settings, cls.signer_salt_setting))
+
+    @classmethod
+    def generate(cls, user: User) -> str:
         payload = f"{user.pk}:{user.email}"
-        return ActivationTokenService._signer.sign(payload)
+        return cls.signer().sign(payload)
 
-    @staticmethod
-    def validate(token: str) -> tuple[int, str]:
-        unsigned = ActivationTokenService._unsign(token)
-        return ActivationTokenService._extract_payload(unsigned)
-
-    @staticmethod
-    def _unsign(token: str) -> str:
+    @classmethod
+    def _unsign(cls, token: str) -> str:
         try:
-            return ActivationTokenService._signer.unsign(
-                token, max_age=settings.ACCOUNT_ACTIVATION_MAX_AGE_SECONDS
+            return cls.signer().unsign(
+                token, max_age=getattr(settings, cls.max_age_setting)
             )
 
         except SignatureExpired as e:
-            raise ValidationError("Link de ativação expirado.") from e
+            raise ValidationError(cls.signature_expired_msg) from e
 
         except BadSignature as e:
-            raise ValidationError("Link de ativação inválido.") from e
+            raise ValidationError(cls.bad_signature_msg) from e
 
-    @staticmethod
-    def _extract_payload(unsigned: str) -> tuple[int, str]:
+    @classmethod
+    def _extract_payload(cls, unsigned: str) -> tuple[int, str]:
         try:
             user_id_str, email = unsigned.split(":", 1)
             return int(user_id_str), email
-        except (TypeError, ValueError) as exc:
-            raise ValidationError("Token de ativação malformado.") from exc
+        except (TypeError, ValueError) as e:
+            raise ValidationError(cls.malformed_msg) from e
+
+    @classmethod
+    def validate(cls, token: str) -> tuple[int, str]:
+        unsigned = cls._unsign(token)
+        return cls._extract_payload(unsigned)
 
 
-class EmailService:
-    @staticmethod
-    def build_activation_url(*, token: str, request=None) -> str:
-        path = reverse("accounts:activate")
+class ActivationTokenService(BaseSignedTokenService):
+    signer_salt_setting = "ACCOUNT_ACTIVATION_SALT"
+    max_age_setting = "ACCOUNT_ACTIVATION_MAX_AGE_SECONDS"
+    signature_expired_msg = "Link de ativação expirado."
+    bad_signature_msg = "Link de ativação inválido."
+    malformed_msg = "Token de ativação malformado."
+
+
+class PasswordResetTokenService(BaseSignedTokenService):
+    signer_salt_setting = "PASSWORD_RESET_SALT"
+    max_age_setting = "PASSWORD_RESET_MAX_AGE_SECONDS"
+    signature_expired_msg = "Token de redefinição expirado."
+    bad_signature_msg = "Token de redefinição inválido."
+    malformed_msg = "Token de redefinição malformado."
+
+
+class BaseEmailService:
+    route_name: str
+    missing_request_msg: str
+    subject: str
+
+    @classmethod
+    def _build_url_with_token(cls, token: str, request=None) -> str:
+        path = reverse(cls.route_name)
         query = urlencode({"token": token})
 
         if request is None:
-            raise ValidationError(
-                "Não foi possível montar URL de ativação sem request"
-                " ou ACCOUNT_ACTIVATION_BASE_URL."
-            )
+            raise ValidationError(cls.missing_request_msg)
         return request.build_absolute_uri(f"{path}?{query}")
 
-    @staticmethod
-    def send_activation_email(*, user: User, token: str, request=None) -> None:
-        activation_url = EmailService.build_activation_url(token=token, request=request)
-        subject = "Ative sua conta"
-        message = (
+    @classmethod
+    def build_url(cls, *, token: str, request=None) -> str:
+        return cls._build_url_with_token(token=token, request=request)
+
+    @classmethod
+    def _send_text_email(cls, *, recipient: str, message: str) -> None:
+        send_mail(
+            subject=cls.subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[recipient],
+            fail_silently=False,
+        )
+
+    @classmethod
+    def build_message(cls, *, user: User, url: str) -> str:
+        raise NotImplementedError
+
+    @classmethod
+    def send_email(cls, *, user: User, token: str, request=None) -> None:
+        url = cls.build_url(
+            token=token,
+            request=request,
+        )
+        message = cls.build_message(user=user, url=url)
+        cls._send_text_email(recipient=user.email, message=message)
+
+
+class ActivationEmailService(BaseEmailService):
+    route_name = "accounts:activate"
+    missing_request_msg = "Não foi possível montar URL de ativação sem request"
+    subject = "Ative sua conta"
+
+    @classmethod
+    def build_message(cls, *, user: User, url: str) -> str:
+        return (
             f"Olá, {user.first_name or user.username}!\n\n"
             "Seu cadastro foi realizado com sucesso.\n"
             "Para ativar sua conta acesse o link abaixo:\n\n"
-            f"{activation_url}\n\n"
+            f"{url}\n\n"
             "Se você não solicitou esse cadastro ignore esse e-mail."
         )
 
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
+
+class PasswordResetEmailService(BaseEmailService):
+    route_name = "accounts:password-reset-confirm"
+    missing_request_msg = "Não foi possível montar URL de redefinição sem request"
+    subject = "Redefinição de senha"
+
+    @classmethod
+    def build_message(cls, *, user: User, url: str) -> str:
+        return (
+            f"Olá, {user.first_name or user.username}!\n\n"
+            "Recebemos uma solicitação para redefinir sua senha.\n"
+            "Acesse o link abaixo para continuar\n\n"
+            f"{url}\n\n"
+            "Se você não solicitou esse cadastro ignore esse e-mail."
         )
