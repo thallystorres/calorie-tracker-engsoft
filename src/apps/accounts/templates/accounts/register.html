@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+  <div class="w-full max-w-[1200px] bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col lg:flex-row lg:h-[760px]">
+
+    <div class="hidden lg:flex lg:w-5/12 relative bg-emerald-950 overflow-hidden">
+      <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay" />
+      <div class="absolute inset-0 bg-gradient-to-br from-emerald-900/90 via-emerald-800/80 to-emerald-950/95"></div>
+      <div class="relative z-10 p-12 flex flex-col h-full justify-between">
+        <div class="flex items-center gap-3">
+          <div class="bg-white/10 backdrop-blur-md p-2.5 rounded-2xl border border-white/20"><span class="font-bold text-white">cIA</span></div>
+          <span class="text-3xl font-bold text-white">calorIA</span>
+        </div>
+        <div>
+          <h2 class="text-4xl font-semibold leading-tight mb-4 text-white">O primeiro passo <br/><span class="text-emerald-300 italic font-light">para a sua melhor versão.</span></h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-full lg:w-7/12 p-8 sm:p-14 flex flex-col justify-center overflow-y-auto">
+      <div class="w-full max-w-[480px] mx-auto">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-slate-900 mb-2">Crie sua conta</h1>
+          <p class="text-slate-500">Junte-se a nós e transforme sua gestão nutricional.</p>
+        </div>
+
+        <form hx-post="{% url 'accounts:register' %}" hx-target="#form-feedback" hx-swap="innerHTML" class="space-y-4">
+          <div id="form-feedback"></div>
+
+          <div class="flex gap-4">
+            <div class="space-y-1.5 flex-1">
+              <label class="text-sm font-semibold text-slate-700 ml-1">Nome</label>
+              <input type="text" name="first_name" required class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" />
+            </div>
+            <div class="space-y-1.5 flex-1">
+              <label class="text-sm font-semibold text-slate-700 ml-1">Sobrenome</label>
+              <input type="text" name="last_name" required class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" />
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1">Nome de Usuário</label>
+            <input type="text" name="username" required class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1">E-mail</label>
+            <input type="email" name="email" required class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" />
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4">
+            <div class="space-y-1.5 flex-1">
+              <label class="text-sm font-semibold text-slate-700 ml-1">Senha</label>
+              <input type="password" name="password" id="password" required class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" />
+            </div>
+            <div class="space-y-1.5 flex-1">
+              <label class="text-sm font-semibold text-slate-700 ml-1">Confirmar Senha</label>
+              <input type="password" name="confirm_password" required class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" />
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-2">
+            <p class="text-xs font-semibold text-slate-700 mb-2">A senha deve conter:</p>
+            <ul class="text-xs space-y-1.5 text-slate-500" id="password-checklist">
+              <li id="req-length" class="flex items-center gap-2 transition-colors duration-200">
+                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4" fill="currentColor"></circle></svg>
+                Mínimo de 8 caracteres
+              </li>
+              <li id="req-upper" class="flex items-center gap-2 transition-colors duration-200">
+                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4" fill="currentColor"></circle></svg>
+                Letra maiúscula
+              </li>
+              <li id="req-lower" class="flex items-center gap-2 transition-colors duration-200">
+                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4" fill="currentColor"></circle></svg>
+                Letra minúscula
+              </li>
+              <li id="req-number" class="flex items-center gap-2 transition-colors duration-200">
+                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4" fill="currentColor"></circle></svg>
+                Número
+              </li>
+              <li id="req-special" class="flex items-center gap-2 transition-colors duration-200">
+                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="4" fill="currentColor"></circle></svg>
+                Caractere especial
+              </li>
+            </ul>
+          </div>
+
+          <button type="submit" class="w-full py-4 mt-6 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all">Criar Conta</button>
+        </form>
+
+        <div class="mt-6 text-center text-slate-500 text-sm">
+          Já possui uma conta? <a href="{% url 'accounts:login-ui' %}" class="font-bold text-emerald-600">Fazer login</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('password').addEventListener('input', function(e) {
+    const p = e.target.value;
+
+    // Regras de validação 
+    const rules = [
+      { id: 'req-length', valid: p.length >= 8 },
+      { id: 'req-upper', valid: /[A-Z]/.test(p) },
+      { id: 'req-lower', valid: /[a-z]/.test(p) },
+      { id: 'req-number', valid: /[0-9]/.test(p) },
+      { id: 'req-special', valid: /[^A-Za-z0-9]/.test(p) }
+    ];
+
+    const iconDot = '<circle cx="12" cy="12" r="4" fill="currentColor"></circle>';
+    const iconCheck = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>';
+
+    rules.forEach(rule => {
+      const el = document.getElementById(rule.id);
+      const svg = el.querySelector('svg');
+
+      if (rule.valid) {
+        el.classList.replace('text-slate-500', 'text-emerald-600');
+        svg.classList.replace('text-slate-400', 'text-emerald-500');
+        svg.innerHTML = iconCheck;
+      } else {
+        el.classList.replace('text-emerald-600', 'text-slate-500');
+        svg.classList.replace('text-emerald-500', 'text-slate-400');
+        svg.innerHTML = iconDot;
+      }
+    });
+  });
+</script>
+{% endblock %}
