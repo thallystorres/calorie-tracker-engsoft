@@ -6,6 +6,8 @@ from .views import (
     AccountLogoutView,
     AccountMeView,
     AccountRegisterView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
 )
 
 app_name = "accounts"
@@ -16,4 +18,14 @@ urlpatterns = [
     path("logout/", AccountLogoutView.as_view(), name="logout"),
     path("me/", AccountMeView.as_view(), name="me"),
     path("activate/", AccountActivateView.as_view(), name="activate"),
+    path(
+        "password-reset/request/",
+        PasswordResetRequestView.as_view(),
+        name="password-reset-request",
+    ),
+    path(
+        "password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password-reset-confirm",
+    ),
 ]

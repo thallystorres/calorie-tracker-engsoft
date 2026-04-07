@@ -7,13 +7,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from src.apps.accounts.services import UserService
-
+from .dependencies import get_user_service
 from .serializers import (
     AccountDeleteSerializer,
     AccountLoginSerializer,
     AccountRegisterSerializer,
     AccountSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
 )
 
 
@@ -26,13 +27,12 @@ class AccountRegisterView(APIView):
     permission_classes = [IsNotAuthenticated]
 
     def post(self, request: Request) -> Response:
+        service = get_user_service()
         serializer = AccountRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
 
-        user = UserService.create_account(
-            validated_data=validated_data, request=request
-        )
+        user = service.create_account(validated_data=validated_data, request=request)
 
         output = AccountSerializer(user)
         return Response(
@@ -52,11 +52,12 @@ class AccountMeView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request: Request) -> Response:
+        service = get_user_service()
         request_user = request.user
         serializer = AccountSerializer(request_user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
-        user, email_changed = UserService.update_account(
+        user, email_changed = service.update_account(
             user=request_user, validated_data=validated_data, request=request
         )
 
@@ -78,11 +79,12 @@ class AccountMeView(APIView):
         )
 
     def delete(self, request: Request) -> Response:
+        service = get_user_service()
         serializer = AccountDeleteSerializer(
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        UserService.delete_account(user=request.user)
+        service.delete_account(user=request.user)
         logout(request)  # type:ignore
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -126,11 +128,57 @@ class AccountActivateView(APIView):
             )
 
         try:
-            UserService.activate_account(token)
+            service = get_user_service()
+            service.activate_account(token)
         except ValidationError as e:
             return Response({"detail": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {"detail": "Conta ativada com sucesso."},
             status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [IsNotAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        service = get_user_service()
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = cast("dict[str, Any]", serializer.validated_data)
+        service.request_password_reset(email=validated_data["email"], request=request)
+        return Response(
+            {
+                "detail": (
+                    "Se o e-mail informado estiver cadastrado, "
+                    "você receberá instruções para redefinir a senha."
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [IsNotAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        token = request.query_params.get("token", "").strip()
+        if not token:
+            return Response(
+                {"detail": "Token de definição ausente."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = cast("dict[str, Any]", serializer.validated_data)
+        try:
+            service = get_user_service()
+            service.reset_password_with_token(
+                token=token, new_password=validated_data["new_password"]
+            )
+        except ValidationError as e:
+            return Response({"detail": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Senha definida com sucesso"}, status=status.HTTP_200_OK
         )
