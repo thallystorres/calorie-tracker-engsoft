@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "apps.accounts",
+    "apps.profiles",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
