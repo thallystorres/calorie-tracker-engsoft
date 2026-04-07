@@ -54,6 +54,11 @@ class UserRepository:
         return user
 
     @staticmethod
+    def update_password(*, user: User, new_password: str) -> None:
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+    @staticmethod
     def create_user(
         *, username: str, email: str, first_name: str, last_name: str, password: str
     ) -> User:

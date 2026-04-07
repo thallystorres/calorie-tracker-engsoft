@@ -5,8 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from src.apps.accounts.services import UserService
-
+from .dependencies import get_user_service
 from .repositories import UserRepository
 
 
@@ -79,10 +78,11 @@ class AccountLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        service = get_user_service()
         username_or_email = attrs["username_or_email"].strip()
         password = attrs["password"]
 
-        user = UserService.authenticate_account(
+        user = service.authenticate_account(
             username_or_email=username_or_email, password=password
         )
         attrs["user"] = user
@@ -103,3 +103,26 @@ class AccountDeleteSerializer(serializers.Serializer):
             raise serializers.ValidationError("Senha incorreta.")
 
         return value
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs: dict[str, str]) -> dict[str, str]:
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "As senhas não conferem."}
+            )
+
+        attrs.pop("confirm_password")
+        _run_password_validators(attrs["new_password"])
+
+        return attrs
