@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "apps.accounts",
     "apps.profiles",
+    "apps.foods",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -119,6 +120,8 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "DEFAULT_PAGINATION_CLASS": ("rest_framework.pagination.PageNumberPagination"),
+    "PAGE_SIZE": 20,
 }
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
