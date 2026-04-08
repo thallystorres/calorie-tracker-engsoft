@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .dependencies import get_food_service
-from .serializers import FoodCreateSerializer, FoodSerializer
+from .serializers import FoodCreateSerializer, FoodSerializer, MealLogCreateSerializer, MealLogSerializer
+from .services import FoodService, TrackerService
 
 
 class FoodListCreateView(APIView):
@@ -42,3 +43,29 @@ class FoodDetailView(APIView):
         food = service.get_food_or_404(food_id=food_id)
         serializer = FoodSerializer(food)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MealLogCreateView(APIView):
+  permission_classes = [permissions.IsAuthenticated]
+
+  def post(self, request: Request) -> Response:
+    serializer = MealLogCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    validated_data = cast("dict[str, Any]", serializer.validated_data)
+
+    service = TrackerService()
+    meal_log, warnings = service.log_meal(
+      user=request.user,
+      validated_data=validated_data
+    )
+
+    output = MealLogSerializer(meal_log)
+
+    return Response(
+      {
+        "detail": "Refeição registada com sucesso.",
+        "meal_log": output.data,
+        "warnings": warnings
+      },
+      status=status.HTTP_201_CREATED
+    )

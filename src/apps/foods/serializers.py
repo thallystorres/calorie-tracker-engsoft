@@ -2,7 +2,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from rest_framework import serializers
 
-from .models import Food
+from .models import Food, MealLog
 
 
 class FoodCreateSerializer(serializers.ModelSerializer):
@@ -57,3 +57,16 @@ class FoodSerializer(serializers.ModelSerializer):
             "source",
         )
         read_only = ("id", "source")
+
+
+class MealLogCreateSerializer(serializers.Serializer):
+  food = serializers.PrimaryKeyRelatedField(queryset=Food.objects.all())
+  quantity_g = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=0.1)
+
+
+class MealLogSerializer(serializers.ModelSerializer):
+  food_name = serializers.CharField(source="food.name", read_only=True)
+
+  class Meta:
+    model = MealLog
+    fields = ["id", "food", "food_name", "quantity_g", "consumed_at"]
