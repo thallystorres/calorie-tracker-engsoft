@@ -104,8 +104,9 @@ venvPath = "."
 [tool.pytest.ini_options]
 addopts = "-s --color=yes --tb=short"
 pythonpath = ["src"]
-testpaths = ["tests"]
+testpaths = ["src"]
 DJANGO_SETTINGS_MODULE = "core.settings.dev"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
