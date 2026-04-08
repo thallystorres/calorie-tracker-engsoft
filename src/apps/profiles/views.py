@@ -30,10 +30,8 @@ class ProfileMeView(APIView):
         serializer = NutritionalProfileSerializer(profile, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        updated_profile = serializer.save()
-
         service = get_profile_service()
-        final_profile = service.calculate_and_save_targets(updated_profile)
+        final_profile = service.upsert_profile(profile, serializer.validated_data)
 
         output_serializer = NutritionalProfileSerializer(final_profile)
 

@@ -60,15 +60,17 @@ class ProfileService:
 
         return daily_target.quantize(Decimal("0.01"))
 
-    def calculate_and_save_targets(
-        self, profile: NutritionalProfile
-    ) -> NutritionalProfile:
-        bmr = self.calculate_bmr(
+    def upsert_profile(self, profile: NutritionalProfile, data: dict) -> NutritionalProfile:
+        for attr, value in data.items():
+            setattr(profile, attr, value)
+
+        profile.bmr = self.calculate_bmr(
             profile.weight_kg, profile.height_cm, profile.age, profile.sex
         )
 
-        daily_target = self.calculate_daily_target(
+        profile.daily_calorie_target = self.calculate_daily_target(
             bmr, profile.activity_level, profile.goal
         )
 
-        return self.repo.update_targets(profile, bmr, daily_target)
+        profile.save()
+        return profile
