@@ -1,11 +1,11 @@
 from decimal import Decimal
 
 from .models import NutritionalProfile
-from .repositories import ProfileRepository
+from .repositories import NutritionalProfileRepository
 
 
 class ProfileService:
-    def __init__(self, repository: ProfileRepository):
+    def __init__(self, repository: NutritionalProfileRepository):
         self.repo = repository
 
     def calculate_bmr(

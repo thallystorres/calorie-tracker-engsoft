@@ -3,7 +3,7 @@ from decimal import Decimal
 from .models import NutritionalProfile
 
 
-class ProfileRepository:
+class NutritionalProfileRepository:
     @staticmethod
     def update_targets(
         profile: NutritionalProfile, bmr: Decimal, daily_target: Decimal
