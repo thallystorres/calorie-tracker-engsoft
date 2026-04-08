@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>calorIA - Inteligência Nutricional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+    <style>
+      @keyframes blob {
+        0% {
+          transform: translate(0px, 0px) scale(1);
+        }
+        33% {
+          transform: translate(30px, -50px) scale(1.1);
+        }
+        66% {
+          transform: translate(-20px, 20px) scale(0.9);
+        }
+        100% {
+          transform: translate(0px, 0px) scale(1);
+        }
+      }
+      .animate-blob {
+        animation: blob 7s infinite;
+      }
+      .animation-delay-2000 {
+        animation-delay: 2s;
+      }
+    </style>
+  </head>
+  <body class="antialiased bg-[#F8FAFC]">
+    {% block content %} {% endblock %}
+
+    <script>
+      document.body.addEventListener("htmx:configRequest", function (event) {
+        event.detail.headers["X-CSRFToken"] = "{{ csrf_token }}";
+      });
+
+      function normalizeMessage(value) {
+        if (Array.isArray(value)) {
+          return String(value[0] || "");
+        }
+        return String(value || "");
+      }
+
+      function clearFieldErrors(form) {
+        const fields = form.querySelectorAll("[data-error-for]");
+        fields.forEach(function (el) {
+          el.textContent = "";
+          el.classList.add("hidden");
+        });
+      }
+
+      function renderFieldErrors(form, payload) {
+        let hasFieldError = false;
+        Object.keys(payload || {}).forEach(function (key) {
+          if (key === "detail" || key === "user") {
+            return;
+          }
+          const target = form.querySelector('[data-error-for="' + key + '"]');
+          if (!target) {
+            return;
+          }
+          target.textContent = normalizeMessage(payload[key]);
+          target.classList.remove("hidden");
+          hasFieldError = true;
+        });
+        return hasFieldError;
+      }
+
+      function feedbackMarkup(kind, message) {
+        if (kind === "error") {
+          return (
+            '<div class="bg-red-50 text-red-700 p-3 rounded-xl border border-red-200 text-sm font-medium">' +
+            message +
+            "</div>"
+          );
+        }
+        return (
+          '<div class="bg-emerald-50 text-emerald-700 p-3 rounded-xl border border-emerald-200 text-sm font-medium">' +
+          message +
+          "</div>"
+        );
+      }
+
+      function handleRedirect(form) {
+        const successPath = form.getAttribute("data-success-redirect");
+        if (successPath) {
+          setTimeout(function () {
+            window.location.href = successPath;
+          }, 900);
+        }
+      }
+
+      document.body.addEventListener("htmx:beforeRequest", function (evt) {
+        const form = evt.target.closest("form");
+        if (!form) {
+          return;
+        }
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.classList.add("opacity-70", "cursor-not-allowed");
+          submitButton.setAttribute("aria-busy", "true");
+        }
+        clearFieldErrors(form);
+      });
+
+      document.body.addEventListener("htmx:beforeSwap", function (evt) {
+        const elt = evt.detail.elt;
+        const form = elt && elt.closest ? elt.closest("form") : null;
+        if (!form) {
+          return;
+        }
+
+        const hasJsonFeedbackTarget =
+          form.querySelector('[data-feedback="api-feedback"]') ||
+          form.querySelector("#form-feedback");
+
+        if (!hasJsonFeedbackTarget) {
+          return;
+        }
+
+        evt.detail.shouldSwap = false;
+        evt.detail.isError = false;
+      });
+
+      document.body.addEventListener("htmx:afterRequest", function (evt) {
+        const form = evt.target.closest("form");
+        if (!form) {
+          return;
+        }
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.classList.remove("opacity-70", "cursor-not-allowed");
+          submitButton.removeAttribute("aria-busy");
+        }
+
+        const feedback =
+          form.querySelector('[data-feedback="api-feedback"]') ||
+          form.querySelector("#form-feedback");
+        if (!feedback) {
+          return;
+        }
+
+        let payload = {};
+        try {
+          payload = JSON.parse(evt.detail.xhr.responseText || "{}");
+        } catch (err) {
+          feedback.innerHTML = feedbackMarkup(
+            "error",
+            "Erro de conexão com o servidor.",
+          );
+          return;
+        }
+
+        if (evt.detail.xhr.status >= 400) {
+          const hasFieldError = renderFieldErrors(form, payload);
+          if (!hasFieldError) {
+            const message =
+              normalizeMessage(payload.detail) ||
+              "Erro ao processar requisição.";
+            feedback.innerHTML = feedbackMarkup("error", message);
+          } else {
+            const message =
+              normalizeMessage(payload.detail) ||
+              "Corrija os campos destacados.";
+            feedback.innerHTML = feedbackMarkup("error", message);
+          }
+          return;
+        }
+
+        const message =
+          normalizeMessage(payload.detail) || "Operação realizada com sucesso.";
+        feedback.innerHTML = feedbackMarkup("success", message);
+        handleRedirect(form);
+      });
+    </script>
+  </body>
+</html>
