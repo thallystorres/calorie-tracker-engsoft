@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -39,4 +40,29 @@ class NutritionalProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"Perfil Nutricional - {self.user.username}" # type: ignore
+        return f"Perfil Nutricional - {self.user.username}"  # type: ignore
+
+
+class FoodRestriction(models.Model):
+    class RestrictionTypeChoices(models.TextChoices):
+        GLUTEN_FREE = "CELIACO", "Celíaco"
+        LACTOSE_INTOLERANT = "INTOLERANTE_A_LACTOSE", "Intolerante à Lactose"
+        DIABETIC = "DIABETICO", "Diabético"
+        VEGAN = "VEGANO", "Vegano"  # Fixed typo here
+        VEGETARIAN = "VEGETARIANO", "Vegetariano"
+        OTHER = "OUTRO", "Outro"
+
+    # Added related_name for easier reverse lookups
+    profile = models.ForeignKey(
+        NutritionalProfile, on_delete=models.CASCADE, related_name="restrictions"
+    )
+    restriction_type = models.CharField(
+        max_length=30, choices=RestrictionTypeChoices.choices
+    )
+    # Bumped to 255 just to be safe, but 100 works too
+    description = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        if self.restriction_type == self.RestrictionTypeChoices.OTHER:
+            return f"{self.profile} - {self.description}"
+        return f"{self.profile} - {self.get_restriction_type_display()}"
