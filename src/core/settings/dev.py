@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from .base import *  # noqa: F403
 
 DEBUG = True
@@ -12,4 +14,6 @@ if not ALLOWED_HOSTS:
 
 INTERNAL_IPS = ["127.0.0.1"]
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
