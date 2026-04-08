@@ -398,8 +398,7 @@ class ActivationEmailServiceTests(TestCase):
         request = self.factory.get("/")
         url = self.service.build_url(token="abc", request=request)
 
-        self.assertIn("/api/accounts/activate/", url)
-        self.assertIn("token=abc", url)
+        self.assertIn("/accounts/verify-email/abc/", url)
 
     def test_build_url_without_request_raises_validation_error(self) -> None:
         with self.assertRaises(ValidationError):
@@ -428,8 +427,7 @@ class PasswordResetEmailServiceTests(TestCase):
         request = self.factory.get("/")
         url = self.service.build_url(token="abc", request=request)
 
-        self.assertIn("/api/accounts/password-reset/confirm/", url)
-        self.assertIn("token=abc", url)
+        self.assertIn("/accounts/password-reset/confirm/abc/", url)
 
     def test_build_url_without_request_raises_validation_error(self) -> None:
         with self.assertRaises(ValidationError):

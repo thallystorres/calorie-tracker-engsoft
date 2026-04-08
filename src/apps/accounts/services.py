@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
-from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -83,12 +82,10 @@ class BaseEmailService(ABC):
     subject: str
 
     def _build_url_with_token(self, token: str, request=None) -> str:
-        path = reverse(self.route_name)
-        query = urlencode({"token": token})
-
         if request is None:
             raise ValidationError(self.missing_request_msg)
-        return request.build_absolute_uri(f"{path}?{query}")
+        path = reverse(self.route_name, kwargs={"token": token})
+        return request.build_absolute_uri(path)
 
     def build_url(self, *, token: str, request=None) -> str:
         return self._build_url_with_token(token=token, request=request)
@@ -116,7 +113,7 @@ class BaseEmailService(ABC):
 
 
 class ActivationEmailService(BaseEmailService):
-    route_name = "accounts:activate"
+    route_name = "accounts-ui:verify-email"
     missing_request_msg = "Não foi possível montar URL de ativação sem request"
     subject = "Ative sua conta"
 
@@ -131,7 +128,7 @@ class ActivationEmailService(BaseEmailService):
 
 
 class PasswordResetEmailService(BaseEmailService):
-    route_name = "accounts:password-reset-confirm"
+    route_name = "accounts-ui:password-reset-confirm"
     missing_request_msg = "Não foi possível montar URL de redefinição sem request"
     subject = "Redefinição de senha"
 

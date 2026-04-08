@@ -1,6 +1,4 @@
-from django.contrib.auth.decorators import login_required
 from django.urls import path
-from django.views.generic import TemplateView
 
 from .views import (
     AccountActivateView,
@@ -15,26 +13,6 @@ from .views import (
 app_name = "accounts"
 
 urlpatterns = [
-    path(
-        "register-ui/",
-        TemplateView.as_view(template_name="accounts/register.html"),
-        name="register-ui",
-    ),
-    path(
-        "login-ui/",
-        TemplateView.as_view(template_name="accounts/login.html"),
-        name="login-ui",
-    ),
-    path(
-        "activate-ui/",
-        TemplateView.as_view(template_name="accounts/activate.html"),
-        name="activate-ui",
-    ),
-    path(
-        "profile-ui/",
-        login_required(TemplateView.as_view(template_name="accounts/profile.html")),
-        name="profile-ui",
-    ),
     path("register/", AccountRegisterView.as_view(), name="register"),
     path("login/", AccountLoginView.as_view(), name="login"),
     path("logout/", AccountLogoutView.as_view(), name="logout"),
