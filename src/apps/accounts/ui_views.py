@@ -42,3 +42,8 @@ def password_reset_confirm_page(request, token: str):
 @require_GET
 def password_reset_success_page(request):
     return render(request, "accounts/password_reset_success.html")
+
+@require_GET
+@login_required
+def nutritional_profile_page(request):
+    return render(request, "accounts/nutritional_profile.html")
