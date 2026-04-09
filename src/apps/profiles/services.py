@@ -69,7 +69,7 @@ class ProfileService:
         )
 
         profile.daily_calorie_target = self.calculate_daily_target(
-            bmr, profile.activity_level, profile.goal
+            profile.bmr, profile.activity_level, profile.goal
         )
 
         profile.save()
