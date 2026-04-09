@@ -1,9 +1,9 @@
 from typing import Any
 
+from django.contrib.auth.models import User
 from rest_framework.exceptions import NotFound, ValidationError
 
 from .models import Food, MealLog
-from django.contrib.auth.models import User
 from .repositories import FoodRepository
 
 
