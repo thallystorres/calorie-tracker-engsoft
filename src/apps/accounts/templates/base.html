@@ -46,6 +46,11 @@
               Perfil Nutricional
             </a>
 
+            <a href="{% url 'accounts-ui:tracker' %}"
+               class="text-sm font-semibold {% if request.resolver_match.url_name == 'tracker' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors">
+              Diário (Tracker)
+            </a>
+
             <button
               hx-post="{% url 'accounts:logout' %}"
               hx-swap="none"
@@ -64,6 +69,7 @@
         </div>
       </div>
     </nav>
+
     <main>
       {% block content %} {% endblock %}
     </main>

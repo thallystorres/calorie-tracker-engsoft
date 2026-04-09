@@ -27,6 +27,7 @@ class NutritionalProfile(models.Model):
     height_cm = models.PositiveIntegerField()
     age = models.PositiveIntegerField()
 
+    dietary_restrictions = models.JSONField(default=list, blank=True)
     sex = models.CharField(max_length=1, choices=SexChoices.choices)
     activity_level = models.CharField(
         max_length=15, choices=ActivityLevelChoices.choices
