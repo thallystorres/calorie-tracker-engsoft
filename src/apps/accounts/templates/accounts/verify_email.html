@@ -4,9 +4,9 @@
     class="w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-100 p-8 text-center"
   >
     <h1 class="text-2xl font-bold text-slate-900 mb-2">
-      Verificacao de e-mail
+      Verificação de e-mail
     </h1>
-    <p class="text-slate-500 mb-6">Estamos validando seu link de ativacao.</p>
+    <p class="text-slate-500 mb-6">Estamos validando seu link de ativação.</p>
 
     <form
       hx-get="{% url 'accounts:activate' %}?token={{ token }}"
@@ -23,7 +23,7 @@
     </form>
 
     <div class="mt-6 text-sm text-slate-500">
-      Se o link estiver expirado ou invalido, faca um novo cadastro para receber
+      Se o link estiver expirado ou inválido, faça um novo cadastro para receber
       outro e-mail.
     </div>
 

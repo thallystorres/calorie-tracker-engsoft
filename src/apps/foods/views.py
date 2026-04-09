@@ -7,8 +7,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .dependencies import get_food_service
-from .serializers import FoodCreateSerializer, FoodSerializer, MealLogCreateSerializer, MealLogSerializer
-from .services import FoodService, TrackerService
+from .serializers import (
+    FoodCreateSerializer,
+    FoodSerializer,
+    MealLogCreateSerializer,
+    MealLogSerializer,
+)
+from .services import TrackerService
 
 
 class FoodListCreateView(APIView):

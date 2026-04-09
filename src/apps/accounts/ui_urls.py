@@ -29,15 +29,4 @@ urlpatterns = [
         ui_views.password_reset_success_page,
         name="password-reset-success",
     ),
-    path("me/nutrition/",
-         ui_views.nutritional_profile_page,
-         name="nutritional-profile"),
-
-  path("me/nutrition/",
-       ui_views.nutritional_profile_page,
-       name="nutritional-profile"),
-
-  path("tracker/",
-       ui_views.tracker_page,
-       name="tracker"),
 ]
