@@ -41,12 +41,12 @@
               Dados da Conta
             </a>
 
-            <a href="{% url 'accounts-ui:nutritional-profile' %}"
+            <a href="{% url 'profiles-ui:nutritional-profile' %}"
                class="text-sm font-semibold {% if request.resolver_match.url_name == 'nutritional-profile' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors">
               Perfil Nutricional
             </a>
 
-            <a href="{% url 'accounts-ui:tracker' %}"
+            <a href="{% url 'foods-ui:tracker' %}"
                class="text-sm font-semibold {% if request.resolver_match.url_name == 'tracker' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors">
               Diário (Tracker)
             </a>
