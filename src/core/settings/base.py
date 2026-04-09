@@ -154,13 +154,15 @@ EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 
 # Ativacao de conta por e-mail
-ACCOUNT_ACTIVATION_MAX_AGE_SECONDS = os.getenv(
-    "ACCOUNT_ACTIVATION_MAX_AGE_SECONDS", 86400
+ACCOUNT_ACTIVATION_MAX_AGE_SECONDS = int(
+    os.getenv("ACCOUNT_ACTIVATION_MAX_AGE_SECONDS", "86400")
 )  # 24h
 ACCOUNT_ACTIVATION_SALT = os.getenv(
     "ACCOUNT_ACTIVATION_SALT", "accounts.email-activation.v1"
 )
 
 # Redefinição de senha
-PASSWORD_RESET_MAX_AGE_SECONDS = os.getenv("PASSWORD_RESET_MAX_AGE_SECONDS", 3600)  # 1h
+PASSWORD_RESET_MAX_AGE_SECONDS = int(
+    os.getenv("PASSWORD_RESET_MAX_AGE_SECONDS", "3600")
+)  # 1h
 PASSWORD_RESET_SALT = os.getenv("PASSWORD_RESET_SALT", "accounts.password-reset.v1")
