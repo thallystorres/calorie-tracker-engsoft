@@ -176,10 +176,12 @@
   const itemsContainer = document.getElementById("meal-items");
   const addItemBtn = document.getElementById("add-item-btn");
   const feedback = document.getElementById("tracker-feedback");
+  const itemRowTemplate = itemsContainer
+    .querySelector(".item-row")
+    .cloneNode(true);
 
   function buildItemRow(showRemoveButton = true) {
-    const template = itemsContainer.querySelector(".item-row");
-    const clone = template.cloneNode(true);
+    const clone = itemRowTemplate.cloneNode(true);
     clone.querySelector('select[name="food_id"]').selectedIndex = 0;
     clone.querySelector('input[name="quantity_grams"]').value = "";
 

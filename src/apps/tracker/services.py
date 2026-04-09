@@ -20,8 +20,18 @@ class TrackerService:
             quantity_grams = item["quantity_grams"]
 
             if hasattr(user, "nutritional_profile"):
-                restrictions = set(user.nutritional_profile.dietary_restrictions or [])  # type:ignore
-                allergens = set(food.allergens or [])
+                restrictions = {
+                    value.upper().strip()
+                    for value in user.nutritional_profile.dietary_restrictions.values_list(
+                        "restriction_type", flat=True
+                    )
+                    if value
+                }
+                allergens = {
+                    str(value).upper().strip()
+                    for value in (food.allergens or [])
+                    if value
+                }
                 conflicts = restrictions.intersection(allergens)
                 if conflicts:
                     conflicts_text = ", ".join(sorted(conflicts)).title()
