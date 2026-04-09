@@ -190,11 +190,6 @@
       removeBtn.classList.add("hidden");
     }
 
-    removeBtn.addEventListener("click", () => {
-      clone.remove();
-      toggleRemoveButtons();
-    });
-
     return clone;
   }
 
@@ -212,6 +207,21 @@
 
   addItemBtn.addEventListener("click", () => {
     itemsContainer.appendChild(buildItemRow(true));
+    toggleRemoveButtons();
+  });
+
+  itemsContainer.addEventListener("click", (evt) => {
+    const removeButton = evt.target.closest(".remove-item-btn");
+    if (!removeButton) {
+      return;
+    }
+
+    const row = removeButton.closest(".item-row");
+    if (!row) {
+      return;
+    }
+
+    row.remove();
     toggleRemoveButtons();
   });
 
