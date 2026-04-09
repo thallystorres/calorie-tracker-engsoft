@@ -1,78 +1,281 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
   <div class="max-w-3xl mx-auto">
-
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-bold text-slate-900">Perfil Nutricional</h1>
     </div>
 
     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
-
       {% if user.nutritional_profile %}
-      <div class="mb-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div>
-              <p class="text-sm text-emerald-600 font-semibold uppercase tracking-wider">Sua Taxa Metabólica Basal</p>
-              <p class="text-3xl font-bold text-emerald-800">{{ user.nutritional_profile.bmr }} <span class="text-lg font-medium">kcal/dia</span></p>
-          </div>
-          <div class="sm:text-right">
-              <p class="text-sm text-emerald-600 font-semibold uppercase tracking-wider">Meta Diária (Objetivo)</p>
-              <p class="text-3xl font-bold text-emerald-800">{{ user.nutritional_profile.daily_calorie_target }} <span class="text-lg font-medium">kcal/dia</span></p>
-          </div>
+      <div
+        class="mb-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4"
+      >
+        <div>
+          <p
+            class="text-sm text-emerald-600 font-semibold uppercase tracking-wider"
+          >
+            Sua Taxa Metabólica Basal
+          </p>
+          <p class="text-3xl font-bold text-emerald-800">
+            {{ user.nutritional_profile.bmr }}
+            <span class="text-lg font-medium">kcal/dia</span>
+          </p>
+        </div>
+        <div class="sm:text-right">
+          <p
+            class="text-sm text-emerald-600 font-semibold uppercase tracking-wider"
+          >
+            Meta Diária (Objetivo)
+          </p>
+          <p class="text-3xl font-bold text-emerald-800">
+            {{ user.nutritional_profile.daily_calorie_target }}
+            <span class="text-lg font-medium">kcal/dia</span>
+          </p>
+        </div>
       </div>
       {% else %}
-      <div class="mb-8 p-4 bg-amber-50 rounded-xl border border-amber-100 text-amber-800 text-sm">
-          Você ainda não preencheu seu perfil nutricional. Preencha os dados abaixo para calcular seu BMR.
+      <div
+        class="mb-8 p-4 bg-amber-50 rounded-xl border border-amber-100 text-amber-800 text-sm"
+      >
+        Você ainda não preencheu seu perfil nutricional. Preencha os dados
+        abaixo para calcular seu BMR.
       </div>
       {% endif %}
 
-      <form hx-{% if user.nutritional_profile %}patch{% else %}post{% endif %}="{% url 'profiles:profile' %}" class="space-y-6">
+      <form
+        hx-{%
+        if
+        user.nutritional_profile
+        %}patch{%
+        else
+        %}post{%
+        endif
+        %}="{% url 'profiles:profile' %}"
+        class="space-y-6"
+      >
         <div data-feedback="api-feedback"></div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-slate-700 ml-1">Peso (kg)</label>
-            <input type="number" step="0.01" name="weight_kg" value="{{ user.nutritional_profile.weight_kg|default:'' }}" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" required />
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Peso (kg)</label
+            >
+            <input
+              type="number"
+              step="0.01"
+              name="weight_kg"
+              value="{{ user.nutritional_profile.weight_kg|default:'' }}"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="weight_kg"
+            ></p>
           </div>
           <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-slate-700 ml-1">Altura (cm)</label>
-            <input type="number" name="height_cm" value="{{ user.nutritional_profile.height_cm|default:'' }}" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" required />
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Altura (cm)</label
+            >
+            <input
+              type="number"
+              name="height_cm"
+              value="{{ user.nutritional_profile.height_cm|default:'' }}"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="height_cm"
+            ></p>
           </div>
           <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-slate-700 ml-1">Idade</label>
-            <input type="number" name="age" value="{{ user.nutritional_profile.age|default:'' }}" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl" required />
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Idade</label
+            >
+            <input
+              type="number"
+              name="age"
+              value="{{ user.nutritional_profile.age|default:'' }}"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="age"
+            ></p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-slate-700 ml-1">Sexo biológico</label>
-            <select name="sex" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl">
-                <option value="M" {% if user.nutritional_profile.sex == 'M' %}selected{% endif %}>Masculino</option>
-                <option value="F" {% if user.nutritional_profile.sex == 'F' %}selected{% endif %}>Feminino</option>
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Sexo biológico</label
+            >
+            <select
+              name="sex"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+            >
+              <option
+                value="M"
+                {%
+                if
+                user.nutritional_profile.sex=""
+                ="M"
+                %}selected{%
+                endif
+                %}
+              >
+                Masculino
+              </option>
+              <option
+                value="F"
+                {%
+                if
+                user.nutritional_profile.sex=""
+                ="F"
+                %}selected{%
+                endif
+                %}
+              >
+                Feminino
+              </option>
             </select>
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="sex"
+            ></p>
           </div>
           <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-slate-700 ml-1">Atividade</label>
-            <select name="activity_level" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl">
-                <option value="SEDENTARIO" {% if user.nutritional_profile.activity_level == 'SEDENTARIO' %}selected{% endif %}>Sedentário</option>
-                <option value="LEVE" {% if user.nutritional_profile.activity_level == 'LEVE' %}selected{% endif %}>Leve</option>
-                <option value="MODERADA" {% if user.nutritional_profile.activity_level == 'MODERADA' %}selected{% endif %}>Moderada</option>
-                <option value="ALTA" {% if user.nutritional_profile.activity_level == 'ALTA' %}selected{% endif %}>Alta</option>
-                <option value="MUITO_ALTA" {% if user.nutritional_profile.activity_level == 'MUITO_ALTA' %}selected{% endif %}>Muito Alta</option>
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Atividade</label
+            >
+            <select
+              name="activity_level"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+            >
+              <option
+                value="SEDENTARIO"
+                {%
+                if
+                user.nutritional_profile.activity_level=""
+                ="SEDENTARIO"
+                %}selected{%
+                endif
+                %}
+              >
+                Sedentário
+              </option>
+              <option
+                value="LEVE"
+                {%
+                if
+                user.nutritional_profile.activity_level=""
+                ="LEVE"
+                %}selected{%
+                endif
+                %}
+              >
+                Leve
+              </option>
+              <option
+                value="MODERADA"
+                {%
+                if
+                user.nutritional_profile.activity_level=""
+                ="MODERADA"
+                %}selected{%
+                endif
+                %}
+              >
+                Moderada
+              </option>
+              <option
+                value="ALTA"
+                {%
+                if
+                user.nutritional_profile.activity_level=""
+                ="ALTA"
+                %}selected{%
+                endif
+                %}
+              >
+                Alta
+              </option>
+              <option
+                value="MUITO_ALTA"
+                {%
+                if
+                user.nutritional_profile.activity_level=""
+                ="MUITO_ALTA"
+                %}selected{%
+                endif
+                %}
+              >
+                Muito Alta
+              </option>
             </select>
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="activity_level"
+            ></p>
           </div>
           <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-slate-700 ml-1">Objetivo</label>
-            <select name="goal" class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl">
-                <option value="PERDA" {% if user.nutritional_profile.goal == 'PERDA' %}selected{% endif %}>Perda de Peso</option>
-                <option value="MANUTENCAO" {% if user.nutritional_profile.goal == 'MANUTENCAO' %}selected{% endif %}>Manutenção</option>
-                <option value="GANHO" {% if user.nutritional_profile.goal == 'GANHO' %}selected{% endif %}>Ganho de Massa</option>
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Objetivo</label
+            >
+            <select
+              name="goal"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+            >
+              <option
+                value="PERDA"
+                {%
+                if
+                user.nutritional_profile.goal=""
+                ="PERDA"
+                %}selected{%
+                endif
+                %}
+              >
+                Perda de Peso
+              </option>
+              <option
+                value="MANUTENCAO"
+                {%
+                if
+                user.nutritional_profile.goal=""
+                ="MANUTENCAO"
+                %}selected{%
+                endif
+                %}
+              >
+                Manutenção
+              </option>
+              <option
+                value="GANHO"
+                {%
+                if
+                user.nutritional_profile.goal=""
+                ="GANHO"
+                %}selected{%
+                endif
+                %}
+              >
+                Ganho de Massa
+              </option>
             </select>
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="goal"
+            ></p>
           </div>
         </div>
 
-        <button type="submit" class="w-full sm:w-auto px-8 py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all">
+        <button
+          type="submit"
+          class="w-full sm:w-auto px-8 py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
+        >
           Calcular BMR e Salvar
         </button>
       </form>

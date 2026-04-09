@@ -8,10 +8,18 @@
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
     <style>
       @keyframes blob {
-        0% { transform: translate(0px, 0px) scale(1); }
-        33% { transform: translate(30px, -50px) scale(1.1); }
-        66% { transform: translate(-20px, 20px) scale(0.9); }
-        100% { transform: translate(0px, 0px) scale(1); }
+        0% {
+          transform: translate(0px, 0px) scale(1);
+        }
+        33% {
+          transform: translate(30px, -50px) scale(1.1);
+        }
+        66% {
+          transform: translate(-20px, 20px) scale(0.9);
+        }
+        100% {
+          transform: translate(0px, 0px) scale(1);
+        }
       }
       .animate-blob {
         animation: blob 7s infinite;
@@ -22,57 +30,77 @@
     </style>
   </head>
   <body class="antialiased bg-[#F8FAFC]">
-
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
-
           <div class="flex items-center">
-            <a href="{% url 'accounts-ui:profile' %}" class="text-2xl font-black text-emerald-600 tracking-tighter">
-              CalorAI
+            <a
+              href="{% url 'accounts-ui:profile' %}"
+              class="text-2xl font-black text-emerald-600 tracking-tighter"
+            >
+              calorIA
             </a>
           </div>
 
           {% if user.is_authenticated %}
           <div class="flex items-center space-x-6">
-
-            <a href="{% url 'accounts-ui:profile' %}"
-               class="text-sm font-semibold {% if request.resolver_match.url_name == 'profile' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors">
+            <a
+              href="{% url 'accounts-ui:profile' %}"
+              class="text-sm font-semibold {% if request.resolver_match.url_name == 'profile' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors"
+            >
               Dados da Conta
             </a>
 
-            <a href="{% url 'profiles-ui:nutritional-profile' %}"
-               class="text-sm font-semibold {% if request.resolver_match.url_name == 'nutritional-profile' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors">
+            <a
+              href="{% url 'profiles-ui:nutritional-profile' %}"
+              class="text-sm font-semibold {% if request.resolver_match.url_name == 'nutritional-profile' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors"
+            >
               Perfil Nutricional
             </a>
 
-            <a href="{% url 'foods-ui:tracker' %}"
-               class="text-sm font-semibold {% if request.resolver_match.url_name == 'tracker' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors">
-              Diário (Tracker)
+            <a
+              href="{% url 'tracker-ui:tracker' %}"
+              class="text-sm font-semibold {% if request.resolver_match.url_name == 'tracker' %}text-emerald-600{% else %}text-slate-500 hover:text-emerald-500{% endif %} transition-colors"
+            >
+              Diário alimentar
             </a>
 
             <button
               hx-post="{% url 'accounts:logout' %}"
               hx-swap="none"
-              onclick="setTimeout(()=>window.location.href='{% url 'accounts-ui:login' %}', 500)"
-              class="text-sm font-bold text-slate-500 hover:text-red-600 transition-colors ml-4 pl-4 border-l border-slate-200">
+              data-login-url="{% url 'accounts-ui:login' %}"
+              onclick="
+                setTimeout(
+                  function () {
+                    window.location.href = this.dataset.loginUrl;
+                  }.bind(this),
+                  500,
+                )
+              "
+              class="text-sm font-bold text-slate-500 hover:text-red-600 transition-colors ml-4 pl-4 border-l border-slate-200"
+            >
               Sair
             </button>
           </div>
           {% else %}
           <div class="flex items-center space-x-4">
-            <a href="{% url 'accounts-ui:login' %}" class="text-sm font-semibold text-slate-600 hover:text-emerald-600">Entrar</a>
-            <a href="{% url 'accounts-ui:register' %}" class="text-sm font-bold text-white bg-emerald-600 px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors">Criar Conta</a>
+            <a
+              href="{% url 'accounts-ui:login' %}"
+              class="text-sm font-semibold text-slate-600 hover:text-emerald-600"
+              >Entrar</a
+            >
+            <a
+              href="{% url 'accounts-ui:register' %}"
+              class="text-sm font-bold text-white bg-emerald-600 px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+              >Criar Conta</a
+            >
           </div>
           {% endif %}
-
         </div>
       </div>
     </nav>
 
-    <main>
-      {% block content %} {% endblock %}
-    </main>
+    <main>{% block content %} {% endblock %}</main>
 
     <script>
       document.body.addEventListener("htmx:configRequest", function (event) {
