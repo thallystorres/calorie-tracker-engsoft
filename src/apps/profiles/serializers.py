@@ -1,6 +1,7 @@
-from rest_framework import serializers
-from .models import NutritionalProfile, FoodRestriction
 from django.core.exceptions import ValidationError
+from rest_framework import serializers
+
+from .models import FoodRestriction, NutritionalProfile
 
 
 class NutritionalProfileSerializer(serializers.ModelSerializer):
