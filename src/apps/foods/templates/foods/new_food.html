@@ -1,0 +1,159 @@
+{% extends "base.html" %} {% block content %}
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8"
+    >
+      <h1 class="text-3xl font-bold text-slate-900">Cadastro de alimento</h1>
+      <a
+        href="{% url 'tracker-ui:tracker' %}"
+        class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+      >
+        Voltar para o diário
+      </a>
+    </div>
+
+    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
+      <div class="mb-6 p-4 bg-sky-50 rounded-xl border border-sky-100">
+        <p class="text-sm font-semibold text-sky-800">Dica sobre calorias</p>
+        <p class="text-sm text-sky-700 mt-1">
+          O campo kcal/100g é opcional. Se ficar em branco, o sistema calcula
+          automaticamente com base em proteína, carboidrato e gordura.
+        </p>
+      </div>
+
+      <form
+        hx-post="{% url 'foods:food' %}"
+        class="space-y-6"
+        data-success-redirect="{% url 'foods-ui:food-create' %}"
+      >
+        <div data-feedback="api-feedback"></div>
+
+        <div class="space-y-1.5">
+          <label class="text-sm font-semibold text-slate-700 ml-1">Nome</label>
+          <input
+            type="text"
+            name="name"
+            placeholder="Ex.: Arroz integral cozido"
+            class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+            required
+          />
+          <p
+            class="hidden mt-1 text-xs font-medium text-red-600"
+            data-error-for="name"
+          ></p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >kcal / 100g (opcional)</label
+            >
+            <input
+              type="number"
+              name="kcal_per_100g"
+              step="0.01"
+              min="0"
+              placeholder="Ex.: 123.45"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="kcal_per_100g"
+            ></p>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Proteína / 100g</label
+            >
+            <input
+              type="number"
+              name="protein_per_100g"
+              step="0.01"
+              min="0"
+              placeholder="Ex.: 2.60"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="protein_per_100g"
+            ></p>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Carboidrato / 100g</label
+            >
+            <input
+              type="number"
+              name="carbs_per_100g"
+              step="0.01"
+              min="0"
+              placeholder="Ex.: 25.80"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="carbs_per_100g"
+            ></p>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Gordura / 100g</label
+            >
+            <input
+              type="number"
+              name="fat_per_100g"
+              step="0.01"
+              min="0"
+              placeholder="Ex.: 0.90"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="fat_per_100g"
+            ></p>
+          </div>
+          <div class="space-y-1.5 sm:col-span-2">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Fibra / 100g</label
+            >
+            <input
+              type="number"
+              name="fiber_per_100g"
+              step="0.01"
+              min="0"
+              placeholder="Ex.: 2.70"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="fiber_per_100g"
+            ></p>
+          </div>
+        </div>
+
+        <p
+          class="hidden mt-1 text-xs font-medium text-red-600"
+          data-error-for="non_field_errors"
+        ></p>
+
+        <div class="pt-2 flex flex-col sm:flex-row gap-3 sm:items-center">
+          <button
+            type="submit"
+            class="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
+          >
+            Salvar alimento
+          </button>
+          <p class="text-xs text-slate-500">
+            Após salvar, você poderá usar o alimento no diário alimentar.
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
