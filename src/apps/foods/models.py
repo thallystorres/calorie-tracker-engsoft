@@ -1,6 +1,5 @@
 from decimal import Decimal
 
-from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -31,16 +30,6 @@ class Food(models.Model):
     outsource_fdc_id = models.IntegerField(null=True, blank=True)
 
     allergens = models.JSONField(default=list, blank=True)
+
     def __str__(self) -> str:
         return self.name
-
-class MealLog(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="meal_logs")
-    food = models.ForeignKey(Food, on_delete=models.CASCADE)
-    quantity_g = models.DecimalField(
-        max_digits=7, decimal_places=2, validators=[MinValueValidator(Decimal('0.1'))]
-    )
-    consumed_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return f"{self.user.username} consumiu {self.quantity_g}g de {self.food.name}"

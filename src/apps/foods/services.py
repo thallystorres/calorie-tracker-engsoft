@@ -1,9 +1,8 @@
 from typing import Any
 
-from django.contrib.auth.models import User
 from rest_framework.exceptions import NotFound, ValidationError
 
-from .models import Food, MealLog
+from .models import Food
 from .repositories import FoodRepository
 
 
@@ -25,32 +24,3 @@ class FoodService:
         if self._repo.exists_by_name(validated_data["name"]):
             raise ValidationError("Alimento com esse nome já existe.")
         return self._repo.create_food(validated_data=validated_data)
-
-
-class TrackerService:
-  def log_meal(self, *, user: User, validated_data: dict[str, Any]) -> tuple[MealLog, list[str]]:
-    food: Food = validated_data["food"]
-    quantity_g = validated_data["quantity_g"]
-
-    warnings = []
-
-    if hasattr(user, 'nutritional_profile'):
-      user_restrictions = set(user.nutritional_profile.dietary_restrictions or [])
-      food_allergens = set(food.allergens or [])
-
-      conflitos = user_restrictions.intersection(food_allergens)
-
-      if conflitos:
-        itens_conflitantes = ", ".join(conflitos).title()
-        warnings.append(
-          f"Atenção: O alimento '{food.name}' possui componentes "
-          f"({itens_conflitantes}) que conflitam com as suas restrições alimentares."
-        )
-
-    meal_log = MealLog.objects.create(
-      user=user,
-      food=food,
-      quantity_g=quantity_g
-    )
-
-    return meal_log, warnings
