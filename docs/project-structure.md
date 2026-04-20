@@ -11,22 +11,11 @@ O Sistema Inteligente de Contador de Calorias é uma aplicação web baseada em 
 ├── docker-compose.yml          # Configuração do Docker Compose para desenvolvimento
 ├── docker-compose-prod.yml     # Configuração do Docker Compose para produção
 ├── Dockerfile                  # Definição da imagem Docker
-├── .dockerignore              # Arquivos a excluir das builds Docker
 ├── pyproject.toml             # Dependências e configuração do projeto Python
 ├── uv.lock                    # Arquivo de lock para resolução determinística de dependências
-├── .python-version            # Especificação da versão Python (3.12)
-├── .env                       # Variáveis de ambiente (desenvolvimento local)
-├── .env-example               # Modelo de exemplo de variáveis de ambiente
 ├── README.md                  # Descrição breve do projeto
 ├── src/                       # Código fonte do projeto Django
-├── docs/                      # Arquivos de documentação
-├── .git/                      # Metadados do repositório Git
-├── .gitignore                 # Padrões de ignore do Git
-├── .vscode/                   # Configuração do editor VS Code
-├── .kilo/                     # Configuração do CLI Kilo
-├── .ruff_cache/               # Cache do linter Ruff
-├── .venv/                     # Ambiente virtual Python (desenvolvimento)
-└── kraken_sitac.log           # Arquivo de log (gerado durante desenvolvimento)
+└── docs/                      # Arquivos de documentação
 ```
 
 ## Código Fonte (`src/`)
@@ -100,7 +89,7 @@ profiles/
 ```
 
 ### 3. Foods (`apps/foods/`)
-Gerencia o banco de dados de alimentos (informação nutricional por 100g) e registro simples de refeições (MealLog).
+Gerencia o banco de dados de alimentos (informação nutricional por 100g).
 
 ```
 foods/
@@ -112,7 +101,7 @@ foods/
 ├── services.py                # FoodService para operações CRUD
 ├── serializers.py
 ├── views.py                   # Listagem/criação/detalhe de alimentos e registro de refeições
-├── models.py                  # Modelos Food e MealLog
+├── models.py                  # Model Food
 ├── urls.py
 ├── tests.py
 └── migrations/
@@ -194,10 +183,9 @@ Build multi‑estágio: imagem base com Python 3.12, instalação de dependênci
 ## Ferramentas de Desenvolvimento
 
 - **Ruff**: Linting e formatação (configurado em `pyproject.toml`).
-- **Mypy**: Verificação estática de tipos.
+- **pyright**: Verificação estática de tipos.
 - **pytest**: Framework de testes com plugin Django.
 - **uv**: Instalador e resolvedor rápido de pacotes Python.
-- **pre‑commit**: Hooks Git para qualidade de código (se configurado).
 
 ## Variáveis de Ambiente
 
@@ -218,9 +206,8 @@ Variáveis de ambiente chave (veja `.env‑example`):
 2. **NutritionalProfile**: Relação um‑para‑um com User, armazena peso, altura, idade, sexo, nível de atividade, objetivo, TMB calculado e meta calórica diária.
 3. **FoodRestriction**: Muitos‑para‑um com NutritionalProfile, armazena tipo de restrição alimentar e descrição opcional.
 4. **Food**: Itens alimentares com valores nutricionais por 100g (kcal, proteína, carboidratos, gordura, fibra) e fonte (USDA, manual, OFF).
-5. **MealLog** (app foods): Registro simples de um único item alimentar com quantidade e timestamp.
-6. **Meal** (app tracker): Rótulo da refeição (café da manhã, almoço, etc.) e timestamp.
-7. **MealItem** (app tracker): Muitos‑para‑um com Meal, referencia Food, armazena quantidade e total de kcal calculado.
+5. **Meal** (app tracker): Rótulo da refeição (café da manhã, almoço, etc.) e timestamp.
+6. **MealItem** (app tracker): Muitos‑para‑um com Meal, referencia Food, armazena quantidade e total de kcal calculado.
 
 ## Implantação
 
