@@ -1,9 +1,5 @@
 # Documentação da Estrutura do Projeto
 
-## Visão Geral
-
-O Sistema Inteligente de Contador de Calorias é uma aplicação web baseada em Django para rastrear ingestão calórica, gerenciar perfis nutricionais e registrar refeições. O projeto segue uma arquitetura em camadas com clara separação de responsabilidades entre endpoints da API, lógica de negócio e persistência de dados.
-
 ## Estrutura do Diretório Raiz
 
 ```
@@ -208,7 +204,3 @@ Variáveis de ambiente chave (veja `.env‑example`):
 4. **Food**: Itens alimentares com valores nutricionais por 100g (kcal, proteína, carboidratos, gordura, fibra) e fonte (USDA, manual, OFF).
 5. **Meal** (app tracker): Rótulo da refeição (café da manhã, almoço, etc.) e timestamp.
 6. **MealItem** (app tracker): Muitos‑para‑um com Meal, referencia Food, armazena quantidade e total de kcal calculado.
-
-## Implantação
-
-O projeto é conteinerizado e pode ser implantado usando Docker Compose (produção) orquestrado com Kubernetes. Arquivos estáticos são servidos via Whitenoise ou um servidor web dedicado (Nginx). Migrações do banco de dados são aplicadas automaticamente na inicialização do contêiner.
