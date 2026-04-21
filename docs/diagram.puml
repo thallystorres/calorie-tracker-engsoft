@@ -23,6 +23,11 @@ package "Controllers" {
   class TrackerController << (C,lightblue) >> {
     + log_meal(request): Response
   }
+
+  class AIEngineController << (C,lightblue) >> {
+    + suggest_meals(request): Response
+    + generate_shopping_list(request): Response
+  }
 }
 
 package "Services" {
@@ -44,6 +49,18 @@ package "Services" {
 
   class TrackerService << (S,lightgreen) >> {
     + log_meal(user, data): (Meal, warnings)
+  }
+
+  class MealSuggesterService << (S,lightgreen) >> {
+    + suggest_meals(context): Suggestion
+  }
+
+  class ShoppingListService << (S,lightgreen) >> {
+    + generate_list(context): ShoppingList
+  }
+
+  class ContextBuilderService << (S,lightgreen) >> {
+    + build_user_context(user): LLMContext
   }
 
   abstract class BaseSignedTokenService << (S,lightgreen) >> {
@@ -83,6 +100,13 @@ package "Repositories" {
     }
 }
 
+package "AI Clients" {
+  abstract class BaseLLMClient {
+    + call_llm(prompt, context): Response
+  }
+  class GeminiLLMClient
+}
+
 package "Entities" {
 
   class User << (E,orange) >>
@@ -99,6 +123,8 @@ ProfilesController --> ProfileService
 FoodsController --> FoodService
 FoodsController --> TrackerService
 TrackerController --> TrackerService
+AIEngineController --> MealSuggesterService
+AIEngineController --> ShoppingListService
 
 ' Services → Repositories
 
@@ -106,6 +132,13 @@ UserService --> UserRepository
 ProfileService --> NutritionalProfileRepository
 FoodService --> FoodRepository
 TrackerService --> TrackerRepository
+MealSuggesterService --> ContextBuilderService
+ShoppingListService --> ContextBuilderService
+
+' Services → AI Clients
+
+MealSuggesterService --> BaseLLMClient
+ShoppingListService --> BaseLLMClient
 
 ' Repositories → Entities
 
@@ -129,6 +162,8 @@ PasswordResetTokenService --|> BaseSignedTokenService
 
 ActivationEmailService --|> BaseEmailService
 PasswordResetEmailService --|> BaseEmailService
+
+GeminiLLMClient --|> BaseLLMClient
 
 note right of AccountsController
 <u>Observações</u>
