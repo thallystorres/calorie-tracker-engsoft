@@ -27,7 +27,7 @@ class NutritionalProfile(models.Model):
     height_cm = models.PositiveIntegerField()
     age = models.PositiveIntegerField()
 
-    # dietary_restrictions = models.JSONField(default=list, blank=True)
+    dietary_restrictions = models.JSONField(default=list, blank=True)
     sex = models.CharField(max_length=1, choices=SexChoices.choices)
     activity_level = models.CharField(
         max_length=15, choices=ActivityLevelChoices.choices
@@ -54,7 +54,7 @@ class FoodRestriction(models.Model):
 
     # Added related_name for easier reverse lookups
     profile = models.ForeignKey(
-        NutritionalProfile, on_delete=models.CASCADE, related_name="dietary_restrictions"
+        NutritionalProfile, on_delete=models.CASCADE,related_name="restriction_items"
     )
     restriction_type = models.CharField(
         max_length=30, choices=RestrictionTypeChoices.choices

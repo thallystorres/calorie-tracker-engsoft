@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<div class="min-h-[85vh] py-8 px-4 sm:px-6 lg:px-8 flex flex-col">
+  <div class="max-w-4xl mx-auto w-full flex-grow flex flex-col bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+
+    <div class="bg-emerald-600 px-6 py-4 flex items-center gap-3 border-b border-emerald-700">
+      <div class="w-10 h-10 rounded-full bg-white text-emerald-600 flex items-center justify-center font-bold text-xl">AI</div>
+      <div>
+        <h1 class="text-lg font-bold text-white">Assistente CalorAI</h1>
+        <p class="text-emerald-100 text-xs">A analisar o seu perfil...</p>
+      </div>
+    </div>
+
+    <div id="chat-history" class="flex-grow p-6 overflow-y-auto space-y-6 bg-slate-50 flex flex-col" style="max-height: 60vh;">
+      <div class="flex justify-start">
+        <div class="bg-white border border-slate-200 text-slate-800 px-5 py-4 rounded-2xl rounded-tl-sm max-w-[85%] shadow-sm text-sm">
+          Olá! Sou o seu assistente nutricional inteligente. Baseado na sua meta e restrições, o que gostaria de planejar para a próxima refeição?
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 bg-white border-t border-slate-100">
+      <form id="ai-chat-form" class="flex gap-3">
+        {% csrf_token %}
+        <input type="text" id="user-message" placeholder="Ex: Sugere-me um almoço rico em proteína..." class="flex-grow px-5 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl outline-none" required autocomplete="off"/>
+        <button type="submit" id="send-btn" class="px-6 py-3 font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50">Enviar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('ai-chat-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const input = document.getElementById('user-message');
+    const btn = document.getElementById('send-btn');
+    const history = document.getElementById('chat-history');
+    const text = input.value.trim();
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    if (!text) return;
+
+    history.insertAdjacentHTML('beforeend', `<div class="flex justify-end"><div class="bg-emerald-600 text-white px-5 py-4 rounded-2xl rounded-tr-sm max-w-[85%] text-sm">${text}</div></div>`);
+    input.value = ''; btn.disabled = true; history.scrollTop = history.scrollHeight;
+
+    const loadId = 'loading-' + Date.now();
+    history.insertAdjacentHTML('beforeend', `<div id="${loadId}" class="flex justify-start"><div class="bg-white border border-slate-200 text-slate-500 px-5 py-4 rounded-2xl rounded-tl-sm text-sm">A processar...</div></div>`);
+    history.scrollTop = history.scrollHeight;
+
+    try {
+        const response = await fetch("{% url 'assistant:api-chat' %}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+            body: JSON.stringify({ message: text })
+        });
+
+        const data = await response.json();
+
+        // Remove a bolha de forma segura (só se ela existir)
+        const loadingEl = document.getElementById(loadId);
+        if (loadingEl) loadingEl.remove();
+
+        if (response.ok) {
+            history.insertAdjacentHTML('beforeend', `
+                <div class="flex justify-start">
+                    <div class="bg-white border border-slate-200 text-slate-800 px-6 py-5 rounded-2xl rounded-tl-sm max-w-[95%] sm:max-w-[85%] shadow-sm">
+                        <div class="prose prose-emerald prose-sm max-w-none">
+                            ${marked.parse(data.reply)}
+                        </div>
+                    </div>
+                </div>
+            `);
+        } else {
+            throw new Error(data.detail || "Erro de comunicação com a IA.");
+        }
+    } catch (error) {
+        // Remove de forma segura também no caso de falha de rede
+        const loadingEl = document.getElementById(loadId);
+        if (loadingEl) loadingEl.remove();
+
+        history.insertAdjacentHTML('beforeend', `<div class="flex justify-start"><div class="bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl rounded-tl-sm shadow-sm text-sm">Desculpe, ocorreu um erro: ${error.message}</div></div>`);
+    } finally {
+        btn.disabled = false; input.focus(); history.scrollTop = history.scrollHeight;
+    }
+  });
+</script>
+{% endblock %}
