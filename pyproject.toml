@@ -18,6 +18,8 @@ dependencies = [
   "django-jazzmin>=3.0.4",
   "requests>=2.33.1",
   "openfoodfacts>=5.0.1",
+  "google-genai>=1.73.1",
+  "pydantic>=2.13.3",
 ]
 
 [dependency-groups]

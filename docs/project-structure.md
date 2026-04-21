@@ -33,6 +33,7 @@ src/
 │   └── celery.py             # Configuração do Celery (se usado)
 ├── apps/                      # Aplicações Django (componentes modulares)
 │   ├── accounts/             # Autenticação de usuário e gerenciamento de contas
+│   ├── ai_engine/            # Sugestões de refeições e listas de compras via LLM
 │   ├── foods/                # Banco de dados de alimentos e registro de refeições
 │   ├── profiles/             # Perfis nutricionais e restrições alimentares
 │   └── tracker/              # Rastreamento de refeições com múltiplos itens
@@ -44,8 +45,34 @@ src/
 
 ### 1. Accounts (`apps/accounts/`)
 Gerencia autenticação de usuários, registro, login, logout, redefinição de senha e ativação de conta.
+...
+### 2. AI Engine (`apps/ai_engine/`)
+Fornece inteligência artificial para sugestão de refeições e geração de listas de compras personalizadas.
 
 ```
+ai_engine/
+├── __init__.py
+├── apps.py
+├── dependencies.py            # Injeção de dependência para serviços e clientes de IA
+├── exceptions.py              # Exceções personalizadas de IA
+├── urls.py
+├── views.py                   # Views para interagir com as sugestões de IA
+├── clients/                   # Clientes para provedores de LLM (Gemini)
+│   ├── __init__.py
+│   ├── base.py
+│   └── gemini.py
+├── prompts/                   # Templates de prompt para a LLM
+│   ├── shopping_list.txt
+│   └── system.txt
+└── services/                  # Lógica para processar sugestões e contexto
+    ├── __init__.py
+    ├── context_builder.py     # Constrói o contexto do usuário para a IA
+    ├── meal_suggester.py      # Orquestra sugestões de refeições
+    └── shopping_list.py       # Gera listas de compras baseadas na dieta
+```
+
+### 3. Profiles (`apps/profiles/`)
+
 accounts/
 ├── __init__.py
 ├── apps.py                    # Configuração da aplicação Django
@@ -63,7 +90,7 @@ accounts/
 └── migrations/                # Migrações do banco de dados (se houver)
 ```
 
-### 2. Profiles (`apps/profiles/`)
+### 3. Profiles (`apps/profiles/`)
 Gerencia perfis nutricionais (peso, altura, idade, nível de atividade, objetivo) e restrições alimentares.
 
 ```
@@ -84,7 +111,7 @@ profiles/
 └── migrations/
 ```
 
-### 3. Foods (`apps/foods/`)
+### 4. Foods (`apps/foods/`)
 Gerencia o banco de dados de alimentos (informação nutricional por 100g).
 
 ```
@@ -103,7 +130,7 @@ foods/
 └── migrations/
 ```
 
-### 4. Tracker (`apps/tracker/`)
+### 5. Tracker (`apps/tracker/`)
 Fornece rastreamento avançado de refeições com múltiplos itens (modelos Meal e MealItem).
 
 ```
@@ -132,7 +159,7 @@ tracker/
 ### Roteamento de URLs
 O `urls.py` principal mapeia dois conjuntos de rotas:
 - **Rotas UI** (páginas renderizadas no servidor): `/accounts/`, `/tracker/`, `/profiles/`
-- **Rotas API** (REST API): `/api/accounts/`, `/api/profiles/`, `/api/foods/`, `/api/tracker/`
+- **Rotas API** (REST API): `/api/accounts/`, `/api/profiles/`, `/api/foods/`, `/api/tracker/`, `/api/ai/`
 
 ### WSGI/ASGI
 Pontos de entrada padrão do Django para produção (WSGI) e servidores assíncronos (ASGI).
@@ -165,7 +192,7 @@ Pontos de entrada padrão do Django para produção (WSGI) e servidores assíncr
 ## Arquivos de Configuração
 
 ### `pyproject.toml`
-Define dependências Python, configurações de ferramentas (Ruff, Mypy, pytest) e metadados do projeto. Usa `uv` para resolução rápida de dependências.
+Define dependências Python, configurações de ferramentas (Ruff, Mypy, pytest) e metadados do projeto. Inclui `google-genai` para integração com LLM e `pydantic` para validação de dados. Usa `uv` para resolução rápida de dependências.
 
 ### `docker-compose.yml`
 Stack de desenvolvimento: banco de dados PostgreSQL, aplicação Django e serviços opcionais (Redis, Celery). Inclui montagens de volume para hot‑reload.

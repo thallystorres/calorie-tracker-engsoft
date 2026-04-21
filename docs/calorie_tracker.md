@@ -54,7 +54,8 @@ Um framework de Nutrition Tracking, fornecendo módulos prontos para registro al
 - Celery = 5.4
 
 ### IA:
-- anthropic || google ai || openai
+- google-genai
+- pydantic
 - [USDA FoodData Central](https://fdc.nal.usda.gov/download-datasets)
 - Pandas = 3.0.x
 - Sugestões??
