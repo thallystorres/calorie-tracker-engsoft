@@ -116,6 +116,9 @@ python_files = ["tests.py", "test_*.py", "*_tests.py"]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.uv.sources]
+tqdm = { index = "pypi" }
+
 [tool.uv]
 package = false
 
