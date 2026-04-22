@@ -22,6 +22,8 @@ dependencies = [
   "langchain-google-genai>=4.2.2",
   "djangorestframework-stubs>=3.16.9",
   "langgraph>=1.1.9",
+  "google-genai>=1.73.1",
+  "pydantic>=2.13.3",
 ]
 
 [dependency-groups]

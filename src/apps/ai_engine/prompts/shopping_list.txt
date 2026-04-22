@@ -1,0 +1,8 @@
+Atue como um assistente de planejamento de compras.
+Vou te fornecer uma lista de refeições planejadas para a semana e os ingredientes necessários.
+Agrupe os itens semelhantes, some as quantidades em gramas e gere uma lista de compras otimizada.
+
+REFEIÇÕES PLANEJADAS:
+{dieta_recomendada_semana}
+
+Retorne um texto formatado em Markdown com seções lógicas (Ex: Hortifruti, Carnes, Mercearia) e com o peso total necessário para a semana.
