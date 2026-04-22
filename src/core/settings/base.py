@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.profiles",
     "apps.foods",
     "apps.tracker",
+    'apps.assistant',
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
