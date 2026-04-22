@@ -12,4 +12,5 @@ urlpatterns = [
     path("api/foods/", include("apps.foods.urls")),
     path("api/tracker/", include("apps.tracker.urls")),
     path("api/ai/", include("apps.ai_engine.urls")),
+    path("assistant/", include("apps.assistant.urls")),
 ]
