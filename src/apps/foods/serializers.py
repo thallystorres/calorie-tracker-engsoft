@@ -1,5 +1,3 @@
-from decimal import ROUND_HALF_UP, Decimal
-
 from rest_framework import serializers
 
 from .models import Food
@@ -34,11 +32,10 @@ class FoodCreateSerializer(serializers.ModelSerializer):
                     "Para calcular kcal automaticamente, protein_per_100g,"
                     " carbs_per_100g e fat_per_100g são obrigatórios."
                 )
-            kcal = (
-                (Decimal("4") * protein) + (Decimal("4") * carbs) + (Decimal("9") * fat)
-            )
-            attrs["kcal_per_100g"] = kcal.quantize(
-                Decimal("0.01"), rounding=ROUND_HALF_UP
+            attrs["kcal_per_100g"] = Food.calculate_kcal_per_100g(
+                protein_per_100g=protein,
+                carbs_per_100g=carbs,
+                fat_per_100g=fat,
             )
         return attrs
 
