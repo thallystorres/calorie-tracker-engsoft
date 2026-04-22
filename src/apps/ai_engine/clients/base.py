@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Callable
 
 import pydantic
 
@@ -16,5 +16,6 @@ class BaseLLMClient(ABC):
         system_prompt: str,
         user_prompt: str,
         response_schema: type[pydantic.BaseModel],
+        tools: list[Callable] | None = None,
     ) -> dict[str, Any]:
         return {"replace": "me"}
