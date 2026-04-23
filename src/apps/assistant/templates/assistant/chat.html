@@ -11,8 +11,13 @@
         <h1 class="text-lg font-bold text-white">Assistente CalorAI</h1>
         <p class="text-emerald-100 text-xs">A analisar o seu perfil...</p>
       </div>
-    </div>
 
+      <div class="ml-auto">
+          <a href="{% url 'assistant:saved-items' %}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold py-2 px-4 rounded-lg transition shadow-sm border border-emerald-600">
+              📂 Meus Planos e Receitas
+          </a>
+      </div>
+    </div>
     <div id="chat-history" class="flex-grow p-6 overflow-y-auto space-y-6 bg-slate-50 flex flex-col" style="max-height: 60vh;">
       <div class="flex justify-start">
         <div class="bg-white border border-slate-200 text-slate-800 px-5 py-4 rounded-2xl rounded-tl-sm max-w-[85%] shadow-sm text-sm">
@@ -28,10 +33,48 @@
         <button type="submit" id="send-btn" class="px-6 py-3 font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl disabled:opacity-50">Enviar</button>
       </form>
     </div>
-  </div>
-</div>
+  </div> </div>
 
 <script>
+  // Função para salvar a dieta ou receita
+  async function salvarConteudo(tipo, textoMarkdown, btnElement) {
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Altera o texto do botão para mostrar que está a pensar
+    const textoOriginal = btnElement.innerHTML;
+    btnElement.innerHTML = '⏳ A guardar...';
+    btnElement.disabled = true;
+
+    try {
+        const response = await fetch("{% url 'assistant:api-save-content' %}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+            body: JSON.stringify({ type: tipo, content: textoMarkdown })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Sucesso! Transforma o botão num selo visual e remove a ação de clique
+            btnElement.innerHTML = '✅ Guardado no seu perfil';
+            btnElement.classList.replace('hover:bg-emerald-200', 'cursor-default');
+            btnElement.classList.replace('hover:bg-orange-200', 'cursor-default');
+            btnElement.classList.remove('bg-emerald-100', 'text-emerald-700', 'bg-orange-100', 'text-orange-700');
+            btnElement.classList.add('bg-slate-100', 'text-slate-500');
+            btnElement.onclick = null; // Remove a função de clique
+        } else {
+            alert('Erro ao salvar: ' + (data.error || 'Erro desconhecido.'));
+            btnElement.innerHTML = textoOriginal; // Volta ao normal se der erro
+            btnElement.disabled = false;
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Falha na comunicação com o servidor.');
+        btnElement.innerHTML = textoOriginal;
+        btnElement.disabled = false;
+    }
+  }
+
   document.getElementById('ai-chat-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     const input = document.getElementById('user-message');
@@ -57,18 +100,39 @@
         });
 
         const data = await response.json();
-
-        // Remove a bolha de forma segura (só se ela existir)
         const loadingEl = document.getElementById(loadId);
         if (loadingEl) loadingEl.remove();
 
         if (response.ok) {
+            let saveBtnHTML = '';
+
+            // CORREÇÃO: Codifica o texto para ser 100% seguro contra aspas e quebras de linha no HTML
+            const safeReply = encodeURIComponent(data.reply).replace(/'/g, "%27");
+
+            // Renderiza botão apenas se não for chat normal
+            if (data.type === 'dieta') {
+                saveBtnHTML = `
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                    <button onclick="salvarConteudo('dieta', decodeURIComponent('${safeReply}'), this)" class="text-sm px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg font-bold hover:bg-emerald-200 transition">
+                        💾 Salvar Dieta
+                    </button>
+                </div>`;
+            } else if (data.type === 'receita') {
+                saveBtnHTML = `
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                    <button onclick="salvarConteudo('receita', decodeURIComponent('${safeReply}'), this)" class="text-sm px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition">
+                        🍳 Salvar Receita
+                    </button>
+                </div>`;
+            }
+
             history.insertAdjacentHTML('beforeend', `
                 <div class="flex justify-start">
                     <div class="bg-white border border-slate-200 text-slate-800 px-6 py-5 rounded-2xl rounded-tl-sm max-w-[95%] sm:max-w-[85%] shadow-sm">
                         <div class="prose prose-emerald prose-sm max-w-none">
                             ${marked.parse(data.reply)}
                         </div>
+                        ${saveBtnHTML}
                     </div>
                 </div>
             `);
@@ -76,7 +140,6 @@
             throw new Error(data.detail || "Erro de comunicação com a IA.");
         }
     } catch (error) {
-        // Remove de forma segura também no caso de falha de rede
         const loadingEl = document.getElementById(loadId);
         if (loadingEl) loadingEl.remove();
 
