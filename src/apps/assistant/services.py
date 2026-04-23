@@ -158,36 +158,60 @@ class DietAssistantService:
     7. DEVOLVA APENAS O TEXTO FINAL EM MARKDOWN. Não use tags JSON, não explique o que fez. Apenas a nova dieta pronta.
     """
 
-        try:
-            # Cria um agente rápido usando o seu LLM e ferramentas
-            agent_executor = create_react_agent(
-                self.llm, self.tools, prompt=edit_prompt
-            )
-            response = agent_executor.invoke({"messages": [("user", instruction)]})
-            novo_conteudo = response["messages"][-1].content
+    try:
+      # Cria um agente rápido usando o seu LLM e ferramentas
+      agent_executor = create_react_agent(self.llm, self.tools, prompt=edit_prompt)
+      response = agent_executor.invoke({"messages": [("user", instruction)]})
+      novo_conteudo = response["messages"][-1].content
 
-            # Limpeza rápida caso a IA devolva lista
-            if isinstance(novo_conteudo, list):
-                pedacos = [
-                    bloco.get("text", str(bloco))
-                    if isinstance(bloco, dict)
-                    else str(bloco)
-                    for bloco in novo_conteudo
-                ]
-                novo_conteudo = "".join(pedacos)
+      # Limpeza rápida caso a IA devolva lista
+      if isinstance(novo_conteudo, list):
+        pedacos = [bloco.get("text", str(bloco)) if isinstance(bloco, dict) else str(bloco) for bloco in novo_conteudo]
+        novo_conteudo = "".join(pedacos)
 
-            # Limpa aspas ou crases de markdown do código
-            novo_conteudo = re.sub(
-                r"^```(markdown)?\s*",
-                "",
-                str(novo_conteudo),
-                flags=re.MULTILINE | re.IGNORECASE,
-            )
-            novo_conteudo = re.sub(
-                r"```\s*$", "", novo_conteudo, flags=re.MULTILINE
-            ).strip()
+      # Limpa aspas ou crases de markdown do código
+      novo_conteudo = re.sub(r'^```(markdown)?\s*', '', str(novo_conteudo), flags=re.MULTILINE | re.IGNORECASE)
+      novo_conteudo = re.sub(r'```\s*$', '', novo_conteudo, flags=re.MULTILINE).strip()
 
-            return novo_conteudo
-        except Exception as e:
-            print(f"Erro na edição por IA: {e}")
-            raise Exception("Falha ao editar com a IA.")
+      return novo_conteudo
+    except Exception as e:
+      print(f"Erro na edição por IA: {e}")
+      raise Exception("Falha ao editar com a IA.")
+
+  def generate_shopping_list(self, saved_contents: list) -> str:
+    if not saved_contents:
+      return "Você ainda não tem dietas ou receitas guardadas para gerar uma lista."
+
+    texto_consolidado = "\n\n--- PRÓXIMO ITEM ---\n\n".join(saved_contents)
+
+    prompt = f"""Você é o Assistente CalorAI. O usuário vai ao supermercado e precisa de uma lista de compras consolidada.
+
+    Abaixo estão os planos alimentares e receitas que ele salvou no sistema:
+    {texto_consolidado}
+
+    SUA TAREFA:
+    1. Extraia TODOS os ingredientes de todos os itens.
+    2. Agrupe os ingredientes iguais e SOME as suas quantidades (ex: se tiver 100g de frango em uma receita e 200g em outra, consolide como 300g).
+    3. Organize a lista final pelas seções do supermercado (Hortifruti, Açougue/Carnes, Mercearia, Laticínios, etc.).
+    4. Retorne APENAS a lista formatada em Markdown, usando checkboxes (ex: `- [ ] 300g de Peito de Frango`). Não adicione frases iniciais ou finais.
+    """
+
+    try:
+      resposta = self.llm.invoke(prompt)
+
+      conteudo = resposta.content
+
+      if isinstance(conteudo, list):
+        pedacos = [bloco.get("text", str(bloco)) if isinstance(bloco, dict) else str(bloco) for bloco in conteudo]
+        texto_bruto = "".join(pedacos)
+      else:
+        texto_bruto = str(conteudo)
+      # --------------------------------------------
+
+      conteudo_limpo = re.sub(r'^```(markdown)?\s*', '', texto_bruto, flags=re.MULTILINE | re.IGNORECASE)
+      conteudo_limpo = re.sub(r'```\s*$', '', conteudo_limpo, flags=re.MULTILINE).strip()
+
+      return conteudo_limpo
+    except Exception as e:
+      print(f"Erro ao gerar lista de compras: {e}")
+      return "Desculpe, ocorreu um erro ao processar a sua lista de compras."
