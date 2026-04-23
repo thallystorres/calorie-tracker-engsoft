@@ -8,9 +8,14 @@
             <h1 class="text-3xl font-bold text-slate-800">Meus Planos e Receitas</h1>
             <p class="text-slate-500 mt-1">Gira o conteúdo que guardou através do Assistente CalorAI.</p>
         </div>
-        <a href="{% url 'assistant:chat-page' %}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">
-            + Nova Conversa
-        </a>
+        <div class="flex gap-3">
+            <a href="{% url 'assistant:shopping-list' %}" class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-semibold hover:bg-emerald-200 transition">
+                🛒 Lista Automática
+            </a>
+            <a href="{% url 'assistant:chat-page' %}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">
+                + Nova Conversa
+            </a>
+        </div>
     </div>
 
     <h2 class="text-xl font-bold text-emerald-700 border-b border-emerald-100 pb-2 mb-6">Dietas Guardadas</h2>

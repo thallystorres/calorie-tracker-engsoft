@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #area-de-impressao, #area-de-impressao * {
+            visibility: visible;
+        }
+        #area-de-impressao {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+
+<div class="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800">🛒 Lista de Compras</h1>
+            <p class="text-slate-500 mt-1">Selecione os pratos que vai preparar e gere uma lista unificada.</p>
+        </div>
+        <a href="{% url 'assistant:saved-items' %}" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-semibold hover:bg-slate-300 transition">
+            Voltar aos Salvos
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 h-fit">
+            <h2 class="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Passo 1: Selecione os Itens</h2>
+
+            <form method="POST" onsubmit="mostrarCarregamento(this)">
+                {% csrf_token %}
+
+                <h3 class="font-semibold text-emerald-700 mt-4 mb-2">As suas Dietas</h3>
+                {% if not dietas %}
+                    <p class="text-sm text-slate-400 italic">Nenhuma dieta guardada.</p>
+                {% else %}
+                    <div class="space-y-2 mb-6 max-h-48 overflow-y-auto pr-2">
+                        {% for dieta in dietas %}
+                        <label class="flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" name="dietas_selecionadas" value="{{ dieta.id }}" class="mt-1 w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                            <div>
+                                <span class="block text-sm font-semibold text-slate-700">{{ dieta.title }}</span>
+                                <span class="block text-xs text-slate-400">{{ dieta.created_at|date:"d M Y" }}</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <h3 class="font-semibold text-orange-600 mt-4 mb-2">As suas Receitas</h3>
+                {% if not receitas %}
+                    <p class="text-sm text-slate-400 italic">Nenhuma receita guardada.</p>
+                {% else %}
+                    <div class="space-y-2 mb-6 max-h-48 overflow-y-auto pr-2">
+                        {% for receita in receitas %}
+                        <label class="flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
+                            <input type="checkbox" name="receitas_selecionadas" value="{{ receita.id }}" class="mt-1 w-4 h-4 text-orange-500 rounded focus:ring-orange-500">
+                            <div>
+                                <span class="block text-sm font-semibold text-slate-700">{{ receita.title }}</span>
+                                <span class="block text-xs text-slate-400">{{ receita.created_at|date:"d M Y" }}</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <button type="submit" class="w-full bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-sm mt-4">
+                    ✨ Gerar Lista Automática
+                </button>
+            </form>
+        </div>
+
+        <div>
+            {% if lista_markdown %}
+                <div id="area-de-impressao" class="bg-white rounded-2xl p-8 shadow-md border border-emerald-200">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b border-emerald-100 pb-4">A sua Lista de Supermercado</h2>
+
+                    <div class="prose prose-emerald prose-md max-w-none" id="lista-renderizada">
+                        </div>
+
+                    <textarea id="raw-markdown" class="hidden">{{ lista_markdown }}</textarea>
+
+                    <div class="mt-8 pt-6 border-t border-slate-100 text-center no-print">
+                        <button onclick="window.print()" class="text-emerald-700 bg-emerald-50 px-6 py-2 rounded-lg font-bold hover:bg-emerald-100 flex items-center justify-center gap-2 w-full transition">
+                            🖨️ Imprimir a Lista
+                        </button>
+                    </div>
+                </div>
+            {% else %}
+                <div class="bg-slate-50 rounded-2xl p-8 border border-slate-200 h-full flex flex-col items-center justify-center text-center text-slate-400">
+                    <span class="text-4xl mb-3">🛒</span>
+                    <p>Selecione os itens ao lado e clique em "Gerar" para ver a sua lista aqui.</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+    function mostrarCarregamento(formulario) {
+        const botao = formulario.querySelector('button[type="submit"]');
+        botao.innerHTML = '⏳ A somar ingredientes...';
+        botao.classList.add('opacity-50', 'pointer-events-none');
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const rawContent = document.getElementById('raw-markdown');
+        const container = document.getElementById('lista-renderizada');
+
+        if (rawContent && container) {
+
+            container.innerHTML = marked.parse(rawContent.value);
+        }
+    });
+</script>
+{% endblock %}

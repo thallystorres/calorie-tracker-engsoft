@@ -1,8 +1,8 @@
-import json
 from typing import TYPE_CHECKING, cast
 
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+import re
+from django.utils import timezone
 
 from django.shortcuts import render
 from rest_framework import permissions, status
@@ -36,7 +36,7 @@ class DietAssistantChatAPIView(APIView):
 
         try:
           ai_reply_data = service.generate_diet_suggestion(
-            user=request.user,
+            user=user,
             user_message=user_message
           )
 
@@ -59,15 +59,47 @@ class SaveAIContentAPIView(APIView):
   def post(self, request: Request) -> Response:
     tipo = request.data.get("type")
     conteudo = request.data.get("content")
+    titulo_enviado = request.data.get("title")
 
     if not conteudo:
       return Response({"error": "Nenhum conteúdo enviado."}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Cast para garantir que os tipos estáticos fiquem felizes
+    user = cast("User", request.user)
+    conteudo_str = str(conteudo)
+
+    titulo_dinamico = ""
+
+    # 1. Se o frontend enviou um título específico, usamos ele
+    if titulo_enviado:
+      titulo_dinamico = str(titulo_enviado).strip()[:255]
+
+    # 2. Se não, tentamos extrair do próprio conteúdo em Markdown
+    if not titulo_dinamico:
+      match = re.search(r'^(#+)\s*(.+)', conteudo_str, re.MULTILINE)
+      if match:
+        matched_str = str(match.group(2))
+        titulo_dinamico = matched_str.replace('*', '').strip()[:255]
+
+    # 3. Fallback dinâmico usando o nome do usuário, o tipo e a data atual
+    if not titulo_dinamico:
+      data_atual = timezone.localtime().strftime("%d/%m/%Y %H:%M")
+      nome_usuario = getattr(user, 'first_name', '') or getattr(user, 'username', 'Usuário')
+
+      if tipo == "dieta":
+        titulo_dinamico = f"Plano Alimentar de {nome_usuario} - {data_atual}"
+      elif tipo == "receita":
+        titulo_dinamico = f"Receita de {nome_usuario} - {data_atual}"
+      else:
+        titulo_dinamico = f"Conteúdo Salvo - {data_atual}"
+
+    # ------------------------------------------
+
     try:
       if tipo == "dieta":
-        SavedDiet.objects.create(user=request.user, content=conteudo)
+        SavedDiet.objects.create(user=user, title=titulo_dinamico, content=conteudo_str)
       elif tipo == "receita":
-        SavedRecipe.objects.create(user=request.user, content=conteudo)
+        SavedRecipe.objects.create(user=user, title=titulo_dinamico, content=conteudo_str)
       else:
         return Response({"error": "Tipo inválido."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -87,6 +119,8 @@ def saved_items_page(request):
     'receitas': receitas
   }
   return render(request, "assistant/saved_items.html", context)
+
+
 @login_required
 @require_POST
 def delete_saved_item(request):
@@ -134,3 +168,43 @@ def edit_saved_item_with_ai(request):
     print(f"Erro na edição por IA: {e}")
 
   return redirect('assistant:saved-items')
+
+
+@login_required
+def shopping_list_page(request):
+  lista_markdown = None
+
+  # 1. Busca todos os itens para exibir as opções (checkboxes)
+  dietas = SavedDiet.objects.filter(user=request.user).order_by('-created_at')
+  receitas = SavedRecipe.objects.filter(user=request.user).order_by('-created_at')
+
+  if request.method == "POST":
+    # 2. Pega as listas de IDs que o utilizador marcou no HTML
+    dietas_selecionadas = request.POST.getlist('dietas_selecionadas')
+    receitas_selecionadas = request.POST.getlist('receitas_selecionadas')
+
+    # 3. Filtra no banco de dados APENAS os conteúdos marcados
+    conteudos_dietas = SavedDiet.objects.filter(
+      id__in=dietas_selecionadas, user=request.user
+    ).values_list('content', flat=True)
+
+    conteudos_receitas = SavedRecipe.objects.filter(
+      id__in=receitas_selecionadas, user=request.user
+    ).values_list('content', flat=True)
+
+    todos_conteudos = list(conteudos_dietas) + list(conteudos_receitas)
+
+    # 4. Envia para a IA apenas se houver algo selecionado
+    if todos_conteudos:
+      service = DietAssistantService()
+      lista_markdown = service.generate_shopping_list(todos_conteudos)
+    else:
+      lista_markdown = "⚠️ Por favor, selecione pelo menos uma dieta ou receita para gerar a lista."
+
+  context = {
+    "dietas": dietas,
+    "receitas": receitas,
+    "lista_markdown": lista_markdown
+  }
+
+  return render(request, "assistant/shopping_list.html", context)
