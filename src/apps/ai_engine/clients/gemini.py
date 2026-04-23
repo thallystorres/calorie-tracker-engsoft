@@ -13,7 +13,9 @@ from .base import BaseLLMClient
 
 class GeminiLLMClient(BaseLLMClient):
     def __init__(
-        self, model_name: str = "gemini-3.1-flash-lite-preview", temperature: float = 0.7
+        self,
+        model_name: str = "gemini-3.1-flash-lite-preview",
+        temperature: float = 0.7,
     ):
         super().__init__(model_name, temperature)
 
@@ -59,7 +61,9 @@ class GeminiLLMClient(BaseLLMClient):
 
                         if tool_func:
                             try:
-                                tool_args = call.args if isinstance(call.args, dict) else {}
+                                tool_args = (
+                                    call.args if isinstance(call.args, dict) else {}
+                                )
                                 result = tool_func(**tool_args)
                                 function_responses.append(
                                     types.Part.from_function_response(
