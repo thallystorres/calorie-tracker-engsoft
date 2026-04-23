@@ -100,13 +100,19 @@
             {% csrf_token %}
             <div id="tracker-feedback"></div>
 
+            <datalist id="foods-list">
+              {% for food in foods %}
+              <option data-id="{{ food.id }}" value="{{ food.name }} ({{ food.kcal_per_100g }} kcal/100g)"></option>
+              {% endfor %}
+            </datalist>
+
             <div class="space-y-1.5">
-              <label class="text-sm font-semibold text-slate-700 ml-1"
+              <label class="text-sm font-semibold text-emerald-50 ml-1"
                 >Tipo de refeição</label
               >
               <select
                 name="label"
-                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
                 required
               >
                 <option value="" disabled selected>Selecione o tipo...</option>
@@ -124,7 +130,7 @@
 
             <div class="space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-700 ml-1">
+                <h3 class="text-sm font-semibold text-emerald-50 ml-1">
                   Itens da refeição
                 </h3>
                 <button
@@ -144,24 +150,14 @@
                     <label class="text-sm font-semibold text-slate-700 ml-1"
                       >Alimento</label
                     >
-                    <select
-                      name="food_id"
-                      class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl"
+                    <input
+                      list="foods-list"
+                      name="food_search"
+                      placeholder="Pesquise um alimento..."
+                      class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
                       required
-                    >
-                      <option value="" disabled selected>
-                        Selecione um alimento...
-                      </option>
-                      {% for food in foods %}
-                      <option value="{{ food.id }}">
-                        {{ food.name }} ({{ food.kcal_per_100g }} kcal/100g)
-                      </option>
-                      {% empty %}
-                      <option value="" disabled>
-                        Nenhum alimento disponível no momento.
-                      </option>
-                      {% endfor %}
-                    </select>
+                      autocomplete="off"
+                    />
                   </div>
 
                   <div class="space-y-1.5">
@@ -174,7 +170,7 @@
                         step="0.1"
                         name="quantity_grams"
                         placeholder="Ex.: 150"
-                        class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl"
+                        class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
                         required
                       />
                       <button
@@ -199,7 +195,7 @@
         </div>
 
         <div
-          class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8"
+          class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mt-8"
         >
           <h2 class="text-xl font-bold text-slate-800 mb-6">Seu histórico</h2>
 
@@ -266,7 +262,8 @@
 
       function buildItemRow(showRemoveButton = true) {
         const clone = itemRowTemplate.cloneNode(true);
-        clone.querySelector('select[name="food_id"]').selectedIndex = 0;
+        const searchInput = clone.querySelector('input[name="food_search"]');
+        if (searchInput) searchInput.value = "";
         clone.querySelector('input[name="quantity_grams"]').value = "";
 
         const removeBtn = clone.querySelector(".remove-item-btn");
@@ -325,19 +322,23 @@
 
         const label = trackerForm.querySelector('select[name="label"]').value;
         const rows = itemsContainer.querySelectorAll(".item-row");
+        const datalistOptions = Array.from(document.getElementById('foods-list').options);
 
-        const items = Array.from(rows).map((row) => ({
-          food_id: Number(row.querySelector('select[name="food_id"]').value),
-          quantity_grams: row.querySelector('input[name="quantity_grams"]')
-            .value,
-        }));
+        const items = Array.from(rows).map((row) => {
+          const inputValue = row.querySelector('input[name="food_search"]').value;
+          const option = datalistOptions.find(opt => opt.value === inputValue);
+          return {
+            food_id: option ? Number(option.dataset.id) : null,
+            quantity_grams: row.querySelector('input[name="quantity_grams"]').value,
+          };
+        });
 
         if (
           !label ||
           items.some((item) => !item.food_id || !item.quantity_grams)
         ) {
           feedback.innerHTML =
-            '<div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm font-medium mb-4">Preencha o tipo da refeição e todos os itens.</div>';
+            '<div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm font-medium mb-4">Preencha o tipo da refeição e selecione alimentos válidos da lista.</div>';
           if (submitButton) {
             submitButton.disabled = false;
             submitButton.classList.remove("opacity-70", "cursor-not-allowed");
