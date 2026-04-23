@@ -74,20 +74,22 @@ class FoodRestriction(models.Model):
 
 
 class SavedDiet(models.Model):
-  user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_diets")
-  title = models.CharField(max_length=255, default="Plano Alimentar Inteligente")
-  content = models.TextField(help_text="Conteúdo em Markdown gerado pela IA")
-  created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_diets")
+    title = models.CharField(max_length=255, default="Plano Alimentar Inteligente")
+    content = models.TextField(help_text="Conteúdo em Markdown gerado pela IA")
+    created_at = models.DateTimeField(auto_now_add=True)
 
-  def __str__(self):
-    return f"{self.title} - {self.user.username}"
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
 
 
 class SavedRecipe(models.Model):
-  user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_recipes")
-  title = models.CharField(max_length=255, default="Receita Saudável")
-  content = models.TextField(help_text="Conteúdo em Markdown gerado pela IA")
-  created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="saved_recipes"
+    )
+    title = models.CharField(max_length=255, default="Receita Saudável")
+    content = models.TextField(help_text="Conteúdo em Markdown gerado pela IA")
+    created_at = models.DateTimeField(auto_now_add=True)
 
-  def __str__(self):
-    return f"{self.title} - {self.user.username}"
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
