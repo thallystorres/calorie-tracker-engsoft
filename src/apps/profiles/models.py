@@ -48,13 +48,18 @@ class FoodRestriction(models.Model):
         GLUTEN_FREE = "CELIACO", "Celíaco"
         LACTOSE_INTOLERANT = "INTOLERANTE_A_LACTOSE", "Intolerante à Lactose"
         DIABETIC = "DIABETICO", "Diabético"
+        EGGS = "ALERGICO_OVO", "Alérgico a ovo"
+        SEAFOOD = "FRUTOS_DO_MAR", "Alérgico a frutos do mar"
+        PEANUTS = "AMENDOIM", "Alérgico a amendoim"
+        SOY = "SOJA", "Alérgico à soja"
+        OATS = "AVEIA", "Alérgico à aveia"
         VEGAN = "VEGANO", "Vegano"  # Fixed typo here
         VEGETARIAN = "VEGETARIANO", "Vegetariano"
         OTHER = "OUTRO", "Outro"
 
     # Added related_name for easier reverse lookups
     profile = models.ForeignKey(
-        NutritionalProfile, on_delete=models.CASCADE,related_name="restriction_items"
+        NutritionalProfile, on_delete=models.CASCADE, related_name="restriction_items"
     )
     restriction_type = models.CharField(
         max_length=30, choices=RestrictionTypeChoices.choices

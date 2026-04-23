@@ -66,35 +66,29 @@
             class="hidden mt-6 bg-white/10 border border-white/20 rounded-xl p-5 backdrop-blur-sm"
           >
             <div
-              id="ai-result"
-              class="hidden mt-6 bg-white/10 border border-white/20 rounded-xl p-5 backdrop-blur-sm"
-            >
-              <div
-                id="ai-system-warning"
-                class="hidden mb-4 p-3 bg-sky-500/20 border border-sky-500/30 rounded-lg text-sky-100 text-sm"
-              ></div>
+              id="ai-system-warning"
+              class="hidden mb-4 p-3 bg-sky-500/20 border border-sky-500/30 rounded-lg text-sky-100 text-sm"
+            ></div>
 
-              <div class="flex justify-between items-start mb-4">
-                <div class="flex justify-between items-start mb-4">
-                  <div>
-                    <h3
-                      id="ai-meal-name"
-                      class="font-bold text-lg text-emerald-50"
-                    ></h3>
-                    <p
-                      id="ai-meal-cals"
-                      class="text-emerald-300 font-semibold text-sm mt-1"
-                    ></p>
-                  </div>
-                </div>
-
-                <div class="space-y-2 mb-4" id="ai-ingredients-list"></div>
-
-                <div
-                  id="ai-adjustments"
-                  class="hidden mb-4 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-100 text-sm"
-                ></div>
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <h3
+                  id="ai-meal-name"
+                  class="font-bold text-lg text-emerald-50"
+                ></h3>
+                <p
+                  id="ai-meal-cals"
+                  class="text-emerald-300 font-semibold text-sm mt-1"
+                ></p>
               </div>
+            </div>
+
+            <div class="space-y-2 mb-4" id="ai-ingredients-list"></div>
+
+            <div
+              id="ai-adjustments"
+              class="hidden mb-4 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-100 text-sm"
+            >
             </div>
           </div>
 
@@ -505,6 +499,6 @@
         }
       });
     </script>
-    {% endblock %}
   </div>
 </div>
+{% endblock %}

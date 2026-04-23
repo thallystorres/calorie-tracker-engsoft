@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import pydantic
 
 
-# TODO: adicionar mecanismo de retry para repetir requests que deram timeout ou erro
 class BaseLLMClient(ABC):
     def __init__(self, model_name: str, temperature):
         self.model_name = model_name
@@ -18,4 +18,4 @@ class BaseLLMClient(ABC):
         response_schema: type[pydantic.BaseModel],
         tools: list[Callable] | None = None,
     ) -> dict[str, Any]:
-        return {"replace": "me"}
+        raise NotImplementedError

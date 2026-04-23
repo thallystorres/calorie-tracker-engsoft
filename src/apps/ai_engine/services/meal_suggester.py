@@ -1,5 +1,4 @@
-import json
-from typing import List, Optional
+from pathlib import Path
 
 from django.contrib.auth.models import User
 from pydantic import BaseModel
@@ -22,28 +21,31 @@ class TargetAdjustmentSchema(BaseModel):
 
 class MealSuggestionSchema(BaseModel):
     meal_name: str
-    ingredients: List[IngredientSchema]
+    ingredients: list[IngredientSchema]
     estimated_calories: float
     target_adjustments: TargetAdjustmentSchema
-    warning: Optional[str] = None  # <-- Novo campo opcional
+    warning: str | None = None  # <-- Novo campo opcional
 
 
 class MealSuggesterService:
+    _PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "system.txt"
+
     def __init__(self, llm_client: BaseLLMClient):
         self.llm_client = llm_client
         self.context_builder = ContextBuilderService()
 
     def suggest_meal(self, user: User, user_prompt: str) -> MealSuggestionSchema:
         context = self.context_builder.get_user_context(user)
+        user_id = getattr(user, "id", None)
 
-        with open("src/apps/ai_engine/prompts/system.txt", "r", encoding="utf-8") as f:
+        with self._PROMPT_PATH.open(encoding="utf-8") as f:
             system_prompt_template = f.read()
 
         system_prompt = system_prompt_template.format(**context)
 
         tools = [search_food, adjust_future_targets]
         augmented_prompt = (
-            f"O ID do usuário atual é {user.id}. Pedido do usuário: {user_prompt}"
+            f"O ID do usuário atual é {user_id}. Pedido do usuário: {user_prompt}"
         )
 
         raw_json = self.llm_client.generate_json(
@@ -53,7 +55,7 @@ class MealSuggesterService:
             tools=tools,
         )
 
-        suggestion = MealSuggestionSchema.model_validate_json(raw_json)
+        suggestion = MealSuggestionSchema.model_validate(raw_json)
 
         # Injeta o aviso no backend, poupando tokens da LLM
         if context.get("historico_insuficiente"):

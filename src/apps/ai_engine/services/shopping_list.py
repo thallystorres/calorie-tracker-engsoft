@@ -1,3 +1,2 @@
-
-class ShoppingListService:
-  #TODO: Implementar
+# class ShoppingListService:
+#   #: Implementar
