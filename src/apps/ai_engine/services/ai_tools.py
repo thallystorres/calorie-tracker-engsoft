@@ -4,23 +4,24 @@ from apps.foods.models import Food
 from apps.profiles.models import NutritionalProfile
 
 
-def search_food(query: str) -> str:
+def search_food(query: str, limite: int = 5) -> str:
     """
-    Busca alimentos no banco de dados nutricional.
-    Retorna o nome do alimento, calorias e macronutrientes por 100g.
-    Sempre use esta ferramenta antes de sugerir um ingrediente para garantir que ele exista.
+    Use esta ferramenta SEMPRE que precisar de sugerir um alimento.
+    Passe um termo_pesquisa (ex: 'frango', 'arroz', 'leite').
+    Retorna uma lista de alimentos disponíveis no sistema com as suas calorias.
     """
-    foods = Food.objects.filter(name__icontains=query)[:5]
-    if not foods:
-        return "Nenhum alimento encontrado. Tente buscar por sinônimos ou ingredientes mais básicos."
+    alimentos = Food.objects.filter(name__icontains=query)[:limite]
 
-    results = []
-    for f in foods:
-        results.append(
-            f"Nome: {f.name} | kcal/100g: {f.kcal_per_100g} | "
-            f"Proteína: {f.protein_per_100g}g | Carboidratos: {f.carbs_per_100g}g | Gordura: {f.fat_per_100g}g"
+    if not alimentos.exists():
+        return (
+            f"Nenhum alimento encontrado com o termo '{query}'. Tente outro sinônimo."
         )
-    return "\n".join(results)
+
+    resultados = []
+    for a in alimentos:
+        resultados.append(f"- {a.name}: {a.kcal_per_100g} kcal/100g")
+
+    return "\n".join(resultados)
 
 
 def adjust_future_targets(

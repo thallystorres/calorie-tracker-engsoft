@@ -1,245 +1,92 @@
-import json
-import re
+from pathlib import Path
 
 from django.contrib.auth.models import User
-from langchain_core.tools import tool
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.prebuilt import create_react_agent
+from pydantic import BaseModel, Field
 
-from apps.foods.models import Food
+from apps.ai_engine.services.ai_tools import search_food
+from src.apps.ai_engine.clients.base import BaseLLMClient
+
+from .context_builder import ContextBuilder
 
 
-@tool
-def buscar_alimentos_no_banco(termo_pesquisa: str, limite: int = 5) -> str:
-    """
-    Use esta ferramenta SEMPRE que precisar de sugerir um alimento.
-    Passe um termo_pesquisa (ex: 'frango', 'arroz', 'leite').
-    Retorna uma lista de alimentos disponíveis no sistema com as suas calorias.
-    """
-    alimentos = Food.objects.filter(name__icontains=termo_pesquisa)[:limite]
-
-    if not alimentos.exists():
-        return f"Nenhum alimento encontrado com o termo '{termo_pesquisa}'. Tente outro sinônimo."
-
-    resultados = []
-    for a in alimentos:
-        resultados.append(f"- {a.name}: {a.kcal_per_100g} kcal/100g")
-
-    return "\n".join(resultados)
+class DietResponseSchema(BaseModel):
+    tipo: str = Field(
+        description="Classifique a resposta estritamente como 'dieta', 'receita' ou 'chat'"
+    )
+    texto: str = Field(
+        description="A sua resposta redigida para o utilizador, formatada em Markdown limpo"
+    )
 
 
 class DietAssistantService:
-    def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-3.1-flash-lite-preview",
-            temperature=0.7,
-        )
-        self.tools = [buscar_alimentos_no_banco]
+    _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+
+    def __init__(self, llm_client: BaseLLMClient):
+        self.llm_client = llm_client
 
     def generate_diet_suggestion(self, user: User, user_message: str = "") -> dict:
-        try:
-            perfil = user.nutritional_profile
-        except Exception:
-            return {
-                "texto": "Erro: O seu perfil nutricional ainda não foi configurado.",
-                "tipo": "chat",
-            }
+        context = (
+            ContextBuilder(user)
+            .add_profile_data()
+            .add_history()
+            .add_restrictions()
+            .build()
+        )
 
-        calorias = perfil.daily_calorie_target
-        objetivo = perfil.goal
-        idade = perfil.age
-        peso = perfil.weight_kg
-        altura = perfil.height_cm
-        sexo = perfil.sex
-        atividade = perfil.activity_level
-
-        restricoes_lista = perfil.dietary_restrictions or []
-        restricoes = ", ".join(restricoes_lista) if restricoes_lista else "Nenhuma"
-
-        system_prompt = f"""Você é o assistente de nutricionista do aplicativo CalorAI. Você é conhecido por ser empático, criativo e dar excelentes dicas de culinária saudável.
-        Sua missão é criar uma dieta com precisão matemática usando o nosso banco de dados, mas apresentá-la de forma humana, apetitosa e instrutiva.
-
-        DADOS DO UTILIZADOR:
-        - Meta Calórica: {calorias} kcal ({objetivo})
-        - Restrições / Alergias: {restricoes}
-        - Idade: {idade}
-        - Peso: {peso}
-        - Altura: {altura}
-        - Sexo: {sexo}
-        - Nível de atividade: {atividade}
-
-        COMPORTAMENTO E INTENÇÃO (MUITO IMPORTANTE):
-        1. Avalie a mensagem do utilizador. Responda de forma humana e conversacional. NÃO gere dietas ou receitas sem que ele peça!
-        2. Seja direto e prático, sem embelezar demais o texto.
-
-        REGRAS DE BUSCA (RAG):
-        1. Você DEVE usar a ferramenta 'buscar_alimentos_no_banco'.
-        2. Se você usar alimentos que não estão na nossa base de dados, realce que as informações acerca das kcal podem divergir um pouco.
-        3. A quantidade de calorias pode passar um pouco pra cima ou pra baixo, dependendo do objetivo ({objetivo}) do usuário.
-        4. Seja direto, não embeleze demais as respostas, seja prático.
-
-        REGRAS DE LIMPEZA DE DADOS (CRÍTICO):
-        5. Oculte marcas e nomes comerciais bizarros do banco de dados na resposta final!
-
-        FORMATO DE SAÍDA OBRIGATÓRIO (JSON):
-        Você NÃO deve responder com texto comum. A sua resposta final DEVE ser estritamente um objeto JSON válido, contendo exatamente duas chaves:
-        1. "tipo": classifique o conteúdo como "dieta", "receita" ou "chat".
-        2. "texto": A sua resposta redigida para o utilizador, formatada em Markdown (use \\n para quebras de linha).
-
-        Exemplo do que devolver (apenas o JSON, sem aspas adicionais ou conversa):
-        {{
-            "tipo": "dieta",
-            "texto": "Olá! Preparei o seu plano... \\n\\n| Refeição | Alimento |..."
-        }}
-        """
-
-        agent_executor = create_react_agent(self.llm, self.tools, prompt=system_prompt)
+        with (self._PROMPTS_DIR / "diet_suggestion.txt").open(encoding="utf-8") as f:
+            system_prompt = f.read().format(**context)
 
         if not user_message or not user_message.strip():
             user_message = "Por favor, monte uma sugestão de dieta para hoje com os alimentos do banco."
 
         try:
-            response = agent_executor.invoke({"messages": [("user", user_message)]})
-            resposta_final = response["messages"][-1].content
-
-            if isinstance(resposta_final, list):
-                pedacos = [
-                    bloco.get("text", str(bloco))
-                    if isinstance(bloco, dict)
-                    else str(bloco)
-                    for bloco in resposta_final
-                ]
-                texto_bruto = "".join(pedacos)
-            else:
-                texto_bruto = str(resposta_final)
-
-            # Limpa blocos de código markdown (```json ... ```) caso a IA adicione
-            conteudo_limpo = re.sub(
-                r"^```json\s*", "", texto_bruto, flags=re.MULTILINE | re.IGNORECASE
+            return self.llm_client.generate_json(
+                system_prompt=system_prompt,
+                user_prompt=user_message,
+                response_schema=DietResponseSchema,
+                tools=[search_food],
             )
-            conteudo_limpo = re.sub(
-                r"```\s*$", "", conteudo_limpo, flags=re.MULTILINE
-            ).strip()
-
-            try:
-                dados = json.loads(conteudo_limpo)
-                tipo_resposta = dados.get("tipo", "chat").lower()
-                texto_final = dados.get("texto", conteudo_limpo)
-            except json.JSONDecodeError:
-                tipo_resposta = "chat"
-                texto_final = texto_bruto
-
-            return {"texto": texto_final, "tipo": tipo_resposta}
-
         except Exception as e:
-            print(f"Erro detalhado na execução do Agente LangGraph: {e}")
+            print(f"Erro detalhado na execução da IA: {e}")
             return {
-                "texto": "Desculpe, tive um problema ao tentar aceder ao banco de dados de alimentos.",
+                "texto": "Desculpe, tive um problema ao tentar acessar o banco de dados de alimentos.",
                 "tipo": "chat",
             }
 
     def edit_content_with_ai(self, current_content: str, instruction: str) -> str:
-        edit_prompt = f"""Você é o Nutricionista Chefe do CalorAI.
-        Sua tarefa é editar uma dieta ou receita existente com base no pedido do utilizador.
-
-        CONTEÚDO ATUAL:
-        {current_content}
-
-        INSTRUÇÃO DO UTILIZADOR:
-        "{instruction}"
-
-        REGRAS:
-        1. Altere O MÍNIMO POSSÍVEL do conteúdo atual, focando-se apenas em atender à instrução.
-        2. Você DEVE usar a ferramenta 'buscar_alimentos_no_banco'.
-        3. Se você usar alimentos que não estão na nossa base de dados, realce que as informações acerca das kcal podem divergir um pouco.
-        4. A quantidade de calorias pode passar um pouco pra cima ou pra baixo.
-        5. Seja direto, não embeleze demais as respostas, seja prático.
-        6. Recalcule os totais se alterar porções ou alimentos.
-        7. DEVOLVA APENAS O TEXTO FINAL EM MARKDOWN. Não use tags JSON, não explique o que fez. Apenas a nova dieta pronta.
-        """
+        with (self._PROMPTS_DIR / "edit_diet.txt").open(encoding="utf-8") as f:
+            system_prompt = f.read().format(
+                current_content=current_content, instruction=instruction
+            )
 
         try:
-            # Cria um agente rápido usando o seu LLM e ferramentas
-            agent_executor = create_react_agent(
-                self.llm, self.tools, prompt=edit_prompt
+            novo_conteudo = self.llm_client.generate_text(
+                system_prompt=system_prompt,
+                user_prompt=instruction,
+                tools=[search_food],
             )
-            response = agent_executor.invoke({"messages": [("user", instruction)]})
-            novo_conteudo = response["messages"][-1].content
-
-            # Limpeza rápida caso a IA devolva lista
-            if isinstance(novo_conteudo, list):
-                pedacos = [
-                    bloco.get("text", str(bloco))
-                    if isinstance(bloco, dict)
-                    else str(bloco)
-                    for bloco in novo_conteudo
-                ]
-                novo_conteudo = "".join(pedacos)
-
-            # Limpa aspas ou crases de markdown do código
-            novo_conteudo = re.sub(
-                r"^```(markdown)?\s*",
-                "",
-                str(novo_conteudo),
-                flags=re.MULTILINE | re.IGNORECASE,
-            )
-            novo_conteudo = re.sub(
-                r"```\s*$", "", novo_conteudo, flags=re.MULTILINE
-            ).strip()
-
-            return novo_conteudo
+            return novo_conteudo.strip()
         except Exception as e:
             print(f"Erro na edição por IA: {e}")
             raise Exception("Falha ao editar com a IA.")
 
-    def generate_shopping_list(self, saved_contents: list) -> str:
+    def generate_shopping_list(self, saved_contents: list[str]) -> str:
         if not saved_contents:
             return (
                 "Você ainda não tem dietas ou receitas guardadas para gerar uma lista."
             )
 
-        texto_consolidado = "\n\n--- PRÓXIMO ITEM ---\n\n".join(saved_contents)
+        context = ContextBuilder().add_saved_contents(saved_contents).build()
 
-        prompt = f"""Você é o Assistente CalorAI. O usuário vai ao supermercado e precisa de uma lista de compras consolidada.
-
-        Abaixo estão os planos alimentares e receitas que ele salvou no sistema:
-        {texto_consolidado}
-
-        SUA TAREFA:
-        1. Extraia TODOS os ingredientes de todos os itens.
-        2. Agrupe os ingredientes iguais e SOME as suas quantidades (ex: se tiver 100g de frango em uma receita e 200g em outra, consolide como 300g).
-        3. Organize a lista final pelas seções do supermercado (Hortifruti, Açougue/Carnes, Mercearia, Laticínios, etc.).
-        4. Retorne APENAS a lista formatada em Markdown, usando checkboxes (ex: `- [ ] 300g de Peito de Frango`). Não adicione frases iniciais ou finais.
-        """
+        with (self._PROMPTS_DIR / "shopping_list.txt").open(encoding="utf-8") as f:
+            system_prompt = f.read().format(**context)
 
         try:
-            resposta = self.llm.invoke(prompt)
-
-            conteudo = resposta.content
-
-            if isinstance(conteudo, list):
-                pedacos = [
-                    bloco.get("text", str(bloco))
-                    if isinstance(bloco, dict)
-                    else str(bloco)
-                    for bloco in conteudo
-                ]
-                texto_bruto = "".join(pedacos)
-            else:
-                texto_bruto = str(conteudo)
-            # --------------------------------------------
-
-            conteudo_limpo = re.sub(
-                r"^```(markdown)?\s*",
-                "",
-                texto_bruto,
-                flags=re.MULTILINE | re.IGNORECASE,
+            lista_markdown = self.llm_client.generate_text(
+                system_prompt=system_prompt,
+                user_prompt="Gere a lista de compras consolidada com base nos meus dados.",
             )
-            conteudo_limpo = re.sub(
-                r"```\s*$", "", conteudo_limpo, flags=re.MULTILINE
-            ).strip()
-
-            return conteudo_limpo
+            return lista_markdown.strip()
         except Exception as e:
             print(f"Erro ao gerar lista de compras: {e}")
             return "Desculpe, ocorreu um erro ao processar a sua lista de compras."

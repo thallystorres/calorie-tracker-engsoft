@@ -13,9 +13,8 @@ from rest_framework.views import APIView
 
 from apps.profiles.models import SavedDiet, SavedRecipe
 
-from .dependencies import get_meal_suggester_service
+from .dependencies import get_diet_assistant_service, get_meal_suggester_service
 from .exceptions import AIEngineError
-from .services.diet_assistant import DietAssistantService
 
 
 class SuggestMealView(APIView):
@@ -54,7 +53,7 @@ class DietAssistantChatAPIView(APIView):
     def post(self, request: Request) -> Response:
         user_message = str(request.data.get("message", "")).strip()
         user = cast("User", request.user)
-        service = DietAssistantService()
+        service = get_diet_assistant_service()
 
         try:
             ai_reply_data = service.generate_diet_suggestion(
@@ -192,7 +191,7 @@ def edit_saved_item_with_ai(request):
         else:
             return redirect("ai-ui:saved-items")
 
-        service = DietAssistantService()
+        service = get_diet_assistant_service()
         novo_conteudo = service.edit_content_with_ai(
             current_content=item.content, instruction=instrucao
         )
@@ -232,7 +231,7 @@ def shopping_list_page(request):
 
         # 4. Envia para a IA apenas se houver algo selecionado
         if todos_conteudos:
-            service = DietAssistantService()
+            service = get_diet_assistant_service()
             lista_markdown = service.generate_shopping_list(todos_conteudos)
         else:
             lista_markdown = "⚠️ Por favor, selecione pelo menos uma dieta ou receita para gerar a lista."

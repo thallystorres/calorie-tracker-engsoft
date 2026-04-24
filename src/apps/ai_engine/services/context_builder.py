@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import Any
 
 from django.contrib.auth.models import User
 from django.db.models import Sum
@@ -11,16 +10,47 @@ from apps.tracker.models import MealItem
 from ..exceptions import ProfileRequiredError
 
 
-class ContextBuilderService:
-    def get_user_context(self, user: User) -> dict:
-        profile = getattr(user, "nutritional_profile", None)
+class ContextBuilder:
+    def __init__(self, user: User | None = None):
+        self.user = user
+        self.context = {}
+
+    def add_profile_data(self):
+        if not self.user:
+            return self
+
+        profile = getattr(self.user, "nutritional_profile", None)
         if profile is None:
-            msg = "Preencha seu perfil nutricional antes de pedir sugestões."
-            raise ProfileRequiredError(msg)
+            raise ProfileRequiredError(
+                "Preencha seu perfil nutricional antes de pedir sugestões."
+            )
 
-        meals_manager: Any = getattr(user, "meals", None)
+        hoje = timezone.now().replace(hour=0, minute=0, second=0)
+        itens_hoje = MealItem.objects.filter(
+            meal__user=self.user, meal__eaten_at__gte=hoje
+        )
+        calorias_consumidas = (
+            itens_hoje.aggregate(total=Sum("kcal_total"))["total"] or 0
+        )
+        calorias_restantes = float(profile.daily_calorie_target) - float(
+            calorias_consumidas
+        )
 
-        # Identifica se o usuário tem menos de 7 dias de uso
+        self.context["calorias_restantes"] = max(0, calorias_restantes)
+        self.context["objetivo"] = profile.get_goal_display()
+        # TODO: Rastrear o Consumo de macros
+        self.context["macros_consumidos"] = {
+            "carb": 150,
+            "protein": 80,
+            "fat": 40,
+        }
+        return self
+
+    def add_history(self):
+        if not self.user:
+            return self
+
+        meals_manager = getattr(self.user, "meals", None)
         first_meal = (
             meals_manager.order_by("eaten_at").first()
             if meals_manager is not None
@@ -30,33 +60,35 @@ class ContextBuilderService:
             not first_meal or (timezone.now() - first_meal.eaten_at).days < 7
         )
 
-        hoje = timezone.now().replace(hour=0, minute=0, second=0)
-
-        itens_hoje = MealItem.objects.filter(meal__user=user, meal__eaten_at__gte=hoje)
-        calorias_consumidas = (
-            itens_hoje.aggregate(total=Sum("kcal_total"))["total"] or 0
-        )
-        calorias_restantes = float(profile.daily_calorie_target) - float(
-            calorias_consumidas
-        )
-
         sete_dias_atras = timezone.now() - timedelta(days=7)
         itens_historico = MealItem.objects.filter(
-            meal__user=user, meal__eaten_at__gte=sete_dias_atras
+            meal__user=self.user, meal__eaten_at__gte=sete_dias_atras
         )
         alimentos_frequentes = list(
             itens_historico.values_list("food__name", flat=True).distinct()[:10]
         )
 
-        restricoes = sorted(extract_user_restriction_codes(user))
-
-        return {
-            "calorias_restantes": max(0, calorias_restantes),
-            "restricoes": ", ".join(restricoes) if restricoes else "Nenhuma",
-            # Fallback caso a lista esteja vazia
-            "historico_refeicoes": ", ".join(alimentos_frequentes)
+        self.context["historico_refeicoes"] = (
+            ", ".join(alimentos_frequentes)
             if alimentos_frequentes
-            else "Nenhum dado prévio registrado.",
-            "macros_consumidos": {"carb": 150, "protein": 80, "fat": 40},
-            "historico_insuficiente": historico_insuficiente,
-        }
+            else "Nenhum dado prévio registrado."
+        )
+        self.context["historico_insuficiente"] = historico_insuficiente
+        return self
+
+    def add_restrictions(self):
+        if not self.user:
+            return self
+
+        restricoes = sorted(extract_user_restriction_codes(self.user))
+        self.context["restricoes"] = ", ".join(restricoes) if restricoes else "Nenhuma"
+        return self
+
+    def add_saved_contents(self, saved_contents: list[str]):
+        self.context["texto_consolidado"] = "\n\n--- PRÓXIMO ITEM ---\n\n".join(
+            saved_contents
+        )
+        return self
+
+    def build(self) -> dict:
+        return self.context

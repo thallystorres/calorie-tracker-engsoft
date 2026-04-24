@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from pydantic import BaseModel
 
 from apps.ai_engine.services.ai_tools import adjust_future_targets, search_food
-from apps.ai_engine.services.context_builder import ContextBuilderService
+from apps.ai_engine.services.context_builder import ContextBuilder
 
 from ..clients.base import BaseLLMClient
 
@@ -32,10 +32,15 @@ class MealSuggesterService:
 
     def __init__(self, llm_client: BaseLLMClient):
         self.llm_client = llm_client
-        self.context_builder = ContextBuilderService()
 
     def suggest_meal(self, user: User, user_prompt: str) -> MealSuggestionSchema:
-        context = self.context_builder.get_user_context(user)
+        context = (
+            ContextBuilder(user)
+            .add_profile_data()
+            .add_history()
+            .add_restrictions()
+            .build()
+        )
         user_id = getattr(user, "id", None)
 
         with self._PROMPT_PATH.open(encoding="utf-8") as f:

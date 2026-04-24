@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from google import genai
-from google.genai import types
+from google.genai.types import GenerateContentConfig, GenerateContentResponse, Part
 from pydantic import TypeAdapter, ValidationError
 
 from ..exceptions import LLMAPIKeyNotSetError
@@ -25,6 +25,37 @@ class GeminiLLMClient(BaseLLMClient):
 
         self.client = genai.Client()
 
+    def __process_function_calls(
+        self, response: GenerateContentResponse, tools: list[Callable]
+    ) -> list[Part]:
+        function_responses: Part = []
+
+        for call in response.function_calls:
+            if not call.name:
+                continue
+
+            tool_func = next(
+                (t for t in (tools or []) if t.__name__ == call.name), None
+            )
+
+            if tool_func:
+                try:
+                    tool_args = call.args if isinstance(call.args, dict) else {}
+                    result = tool_func(**tool_args)
+                    function_responses.append(
+                        Part.from_function_response(
+                            name=call.name, response={"result": result}
+                        )
+                    )
+                except Exception as e:
+                    function_responses.append(
+                        Part.from_function_response(
+                            name=call.name, response={"error": str(e)}
+                        )
+                    )
+
+        return function_responses
+
     def generate_json(
         self,
         system_prompt: str,
@@ -37,7 +68,7 @@ class GeminiLLMClient(BaseLLMClient):
 
         for attempt in range(1, max_attempts + 1):
             try:
-                config = types.GenerateContentConfig(
+                config = GenerateContentConfig(
                     system_instruction=system_prompt,
                     response_mime_type="application/json",
                     response_schema=response_schema,
@@ -49,37 +80,48 @@ class GeminiLLMClient(BaseLLMClient):
                 response = chat.send_message(user_prompt)
 
                 while response.function_calls:
-                    function_responses = []
-
-                    for call in response.function_calls:
-                        if not call.name:
-                            continue
-
-                        tool_func = next(
-                            (t for t in (tools or []) if t.__name__ == call.name), None
-                        )
-
-                        if tool_func:
-                            try:
-                                tool_args = (
-                                    call.args if isinstance(call.args, dict) else {}
-                                )
-                                result = tool_func(**tool_args)
-                                function_responses.append(
-                                    types.Part.from_function_response(
-                                        name=call.name, response={"result": result}
-                                    )
-                                )
-                            except Exception as e:
-                                function_responses.append(
-                                    types.Part.from_function_response(
-                                        name=call.name, response={"error": str(e)}
-                                    )
-                                )
+                    function_responses = self.__process_function_calls(response, tools)
 
                     response = chat.send_message(function_responses)
 
                 return adapter.validate_json(str(response.text))
+            except ValidationError:
+                raise
+            except Exception:
+                if attempt == max_attempts:
+                    raise
+                time.sleep(0.5 * (2 ** (attempt - 1)))
+
+        raise RuntimeError("Falha inesperada ao gerar resposta da IA")
+
+    def generate_text(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        tools: list[Callable] | None = None,
+    ) -> str:
+        max_attempts = 3
+
+        for attempt in range(1, max_attempts + 1):
+            print(f"Attempt number {attempt} of generating text")
+            try:
+                config = GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="text/plain",
+                    temperature=self.temperature,
+                    tools=tools or [],
+                )
+
+                chat = self.client.chats.create(model=self.model_name, config=config)
+                response = chat.send_message(user_prompt)
+
+                while response.function_calls:
+                    print(f"response is {response.text}")
+                    function_responses = self.__process_function_calls(response, tools)
+
+                    response = chat.send_message(function_responses)
+
+                return str(response.text)
             except ValidationError:
                 raise
             except Exception:
