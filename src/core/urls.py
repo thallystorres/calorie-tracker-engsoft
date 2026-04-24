@@ -7,10 +7,10 @@ urlpatterns = [
     path("foods/", include("apps.foods.ui_urls")),
     path("tracker/", include("apps.tracker.ui_urls")),
     path("profiles/", include("apps.profiles.ui_urls")),
+    path("ai/", include("apps.ai_engine.ui_urls")),
     path("api/accounts/", include("apps.accounts.urls")),
     path("api/profiles/", include("apps.profiles.urls")),
     path("api/foods/", include("apps.foods.urls")),
     path("api/tracker/", include("apps.tracker.urls")),
     path("api/ai/", include("apps.ai_engine.urls")),
-    path("assistant/", include("apps.assistant.urls")),
 ]

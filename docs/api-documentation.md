@@ -724,6 +724,107 @@ Respostas de erro seguem o formato:
 
 ---
 
+## API de AI Engine
+
+### Sugerir Refeição
+
+**Endpoint:** `POST /api/ai/suggest_meal/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Gera uma sugestão de refeição personalizada com base no perfil do usuário e um prompt opcional.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `user_prompt` | string | Não | Preferências ou ingredientes que o usuário deseja incluir. |
+
+**Exemplo de Requisição:**
+```json
+{
+  "user_prompt": "Quero algo com frango e batata doce"
+}
+```
+
+**Resposta:**
+
+- `200 OK`
+
+```json
+{
+  "meal_name": "Frango Grelhado com Purê de Batata Doce",
+  "ingredients": [
+    { "name": "Peito de Frango", "quantity_grams": 150.0 },
+    { "name": "Batata Doce", "quantity_grams": 200.0 }
+  ],
+  "estimated_calories": 450.0,
+  "target_adjustments": {
+    "applied": true,
+    "description": "Meta ajustada para compensar o déficit de ontem."
+  },
+  "warning": "..."
+}
+```
+
+---
+
+## API de Assistant
+
+### Chat com Assistente de Dieta
+
+**Endpoint:** `POST /api/assistant/api/chat/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Conversa com a IA para obter sugestões de dietas, receitas ou esclarecer dúvidas.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `message` | string | Sim | Mensagem do usuário para a IA. |
+
+**Resposta:**
+
+- `200 OK`
+
+```json
+{
+  "reply": "Aqui está uma sugestão de receita...",
+  "type": "receita"
+}
+```
+
+### Salvar Conteúdo Gerado por IA
+
+**Endpoint:** `POST /api/assistant/api/save-content/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Salva uma dieta ou receita gerada pela IA no perfil do usuário.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `type` | string | Sim | `"dieta"` ou `"receita"`. |
+| `content` | string | Sim | Conteúdo em Markdown a ser salvo. |
+| `title` | string | Não | Título opcional. |
+
+**Resposta:**
+
+- `201 Created`
+
+```json
+{
+  "status": "success",
+  "message": "Salvo com sucesso!"
+}
+```
+
+---
+
 ## Endpoints UI (Páginas Renderizadas no Servidor)
 
 Estes endpoints retornam páginas HTML para a interface web. Eles não fazem parte da API REST, mas são listados aqui para completude.
@@ -740,6 +841,9 @@ Estes endpoints retornam páginas HTML para a interface web. Eles não fazem par
 | `GET /accounts/password‑reset/success/` | GET | Página de sucesso após redefinição de senha. |
 | `GET /profiles/nutritional‑profile/` | GET | Página de gerenciamento de perfil nutricional. |
 | `GET /tracker/` | GET | Painel de rastreamento de refeições. |
+| `GET /assistant/chat/` | GET | Página do chat do assistente de dieta. |
+| `GET /assistant/salvos/` | GET | Página de itens (dietas/receitas) salvos. |
+| `GET /assistant/lista-compras/` | GET | Página de geração de lista de compras. |
 
 Todos os endpoints UI requerem autenticação por sessão (exceto registro, login, verify‑email e páginas de password‑reset). Eles são destinados à interação humana via navegador web.
 
