@@ -5,7 +5,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from apps.profiles.restrictions import extract_user_restriction_codes
-from apps.tracker.models import MealItem
+from apps.tracker.dependencies import get_meal_repository
 
 from ..exceptions import ProfileRequiredError
 
@@ -16,6 +16,7 @@ class ContextBuilder:
         self.context = {}
 
     def add_profile_data(self):
+        repo = get_meal_repository()
         if not self.user:
             return self
 
@@ -26,9 +27,7 @@ class ContextBuilder:
             )
 
         hoje = timezone.now().replace(hour=0, minute=0, second=0)
-        itens_hoje = MealItem.objects.filter(
-            meal__user=self.user, meal__eaten_at__gte=hoje
-        )
+        itens_hoje = repo.get_meal_items_for_user_from_date(self.user, hoje)
         calorias_consumidas = (
             itens_hoje.aggregate(total=Sum("kcal_total"))["total"] or 0
         )
@@ -43,10 +42,11 @@ class ContextBuilder:
             "carb": 150,
             "protein": 80,
             "fat": 40,
-        }
+        }  # Mock temporário (pelo amor de deus alguem lembra de implementar isso depois)
         return self
 
     def add_history(self):
+        repo = get_meal_repository()
         if not self.user:
             return self
 
@@ -61,8 +61,8 @@ class ContextBuilder:
         )
 
         sete_dias_atras = timezone.now() - timedelta(days=7)
-        itens_historico = MealItem.objects.filter(
-            meal__user=self.user, meal__eaten_at__gte=sete_dias_atras
+        itens_historico = repo.get_meal_items_for_user_from_date(
+            self.user, sete_dias_atras
         )
         alimentos_frequentes = list(
             itens_historico.values_list("food__name", flat=True).distinct()[:10]

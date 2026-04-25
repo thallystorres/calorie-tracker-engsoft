@@ -5,8 +5,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .dependencies import get_tracker_service
 from .serializers import MealCreateSerializer, MealSerializer
-from .services import TrackerService
 
 
 class MealCreateView(APIView):
@@ -17,7 +17,7 @@ class MealCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
 
-        service = TrackerService()
+        service = get_tracker_service()
         meal, warnings = service.log_meal(
             user=request.user, validated_data=validated_data
         )

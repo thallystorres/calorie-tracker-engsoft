@@ -1,27 +1,24 @@
 from functools import cache
 
-from src.apps.ai_engine.services.diet_assistant import DietAssistantService
-
 from .clients.gemini import GeminiLLMClient
-from .services.context_builder import ContextBuilder
-from .services.meal_suggester import MealSuggesterService
+from .services import DietAssistantService, MealSuggesterService, ShoppingListService
+
+
+@cache
+def get_gemini_client() -> GeminiLLMClient:
+    return GeminiLLMClient()
 
 
 @cache
 def get_diet_assistant_service() -> DietAssistantService:
-    return DietAssistantService(GeminiLLMClient())
+    return DietAssistantService(get_gemini_client())
 
 
 @cache
 def get_meal_suggester_service() -> MealSuggesterService:
-    return MealSuggesterService(GeminiLLMClient())
+    return MealSuggesterService(get_gemini_client())
 
 
 @cache
-def get_context_builder() -> ContextBuilder:
-    return ContextBuilder()
-
-
-# @cache
-# def get_shopping_list_service() -> ShoppingListService:
-#     return ShoppingListService()
+def get_shopping_list_service() -> ShoppingListService:
+    return ShoppingListService(get_gemini_client())

@@ -11,9 +11,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.profiles.dependencies import get_profile_repository
 from apps.profiles.models import SavedDiet, SavedRecipe
 
-from .dependencies import get_diet_assistant_service, get_meal_suggester_service
+from .dependencies import (
+    get_diet_assistant_service,
+    get_meal_suggester_service,
+    get_shopping_list_service,
+)
 from .exceptions import AIEngineError
 
 
@@ -77,6 +82,8 @@ class SaveAIContentAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
+        profile_repo = get_profile_repository()
+
         tipo = request.data.get("type", "")
         conteudo = request.data.get("content", "")
         titulo_enviado = request.data.get("title", "")
@@ -122,13 +129,9 @@ class SaveAIContentAPIView(APIView):
 
         try:
             if tipo == "dieta":
-                SavedDiet.objects.create(
-                    user=user, title=titulo_dinamico, content=conteudo_str
-                )
+                profile_repo.create_diet(user, titulo_dinamico, conteudo_str)
             elif tipo == "receita":
-                SavedRecipe.objects.create(
-                    user=user, title=titulo_dinamico, content=conteudo_str
-                )
+                profile_repo.create_recipe(user, titulo_dinamico, conteudo_str)
             else:
                 return Response(
                     {"error": "Tipo inválido."}, status=status.HTTP_400_BAD_REQUEST
@@ -146,9 +149,10 @@ class SaveAIContentAPIView(APIView):
 
 @login_required
 def saved_items_page(request):
+    repo = get_profile_repository()
     # Pega as dietas e receitas do usuário logado, ordenando da mais recente para a mais antiga
-    dietas = SavedDiet.objects.filter(user=request.user).order_by("-created_at")
-    receitas = SavedRecipe.objects.filter(user=request.user).order_by("-created_at")
+    dietas = repo.list_diets(request.user)
+    receitas = repo.list_recipes(request.user)
 
     context = {"dietas": dietas, "receitas": receitas}
     return render(request, "ai_engine/saved_items.html", context)
@@ -208,10 +212,11 @@ def edit_saved_item_with_ai(request):
 @login_required
 def shopping_list_page(request):
     lista_markdown = None
+    repo = get_profile_repository()
 
     # 1. Busca todos os itens para exibir as opções (checkboxes)
-    dietas = SavedDiet.objects.filter(user=request.user).order_by("-created_at")
-    receitas = SavedRecipe.objects.filter(user=request.user).order_by("-created_at")
+    dietas = repo.list_diets(request.user)
+    receitas = repo.list_recipes(request.user)
 
     if request.method == "POST":
         # 2. Pega as listas de IDs que o utilizador marcou no HTML
@@ -219,19 +224,19 @@ def shopping_list_page(request):
         receitas_selecionadas = request.POST.getlist("receitas_selecionadas")
 
         # 3. Filtra no banco de dados APENAS os conteúdos marcados
-        conteudos_dietas = SavedDiet.objects.filter(
-            id__in=dietas_selecionadas, user=request.user
-        ).values_list("content", flat=True)
+        conteudos_dietas = (
+            repo.list_diets_from_id_list(request.user, dietas_selecionadas) or []
+        )
 
-        conteudos_receitas = SavedRecipe.objects.filter(
-            id__in=receitas_selecionadas, user=request.user
-        ).values_list("content", flat=True)
+        conteudos_receitas = (
+            repo.list_recipes_from_id_list(request.user, receitas_selecionadas) or []
+        )
 
         todos_conteudos = list(conteudos_dietas) + list(conteudos_receitas)
 
         # 4. Envia para a IA apenas se houver algo selecionado
         if todos_conteudos:
-            service = get_diet_assistant_service()
+            service = get_shopping_list_service()
             lista_markdown = service.generate_shopping_list(todos_conteudos)
         else:
             lista_markdown = "⚠️ Por favor, selecione pelo menos uma dieta ou receita para gerar a lista."

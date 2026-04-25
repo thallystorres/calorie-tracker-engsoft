@@ -11,9 +11,14 @@ from .services import (
 
 
 @cache
+def get_user_repository() -> UserRepository:
+    return UserRepository()
+
+
+@cache
 def get_user_service() -> UserService:
     return UserService(
-        user_repository=UserRepository(),
+        user_repository=get_user_repository(),
         activation_token_service=ActivationTokenService(),
         password_reset_token_service=PasswordResetTokenService(),
         activation_email_service=ActivationEmailService(),
