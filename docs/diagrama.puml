@@ -18,18 +18,17 @@ package "Controllers" {
     + log_meal(request): Response
   }
 
-    class AccountsController << (C,lightblue) >> {
+  class AccountsController << (C,lightblue) >> {
     + register(request): Response
     + login(request): Response
   }
 
   class AIEngineController << (C,lightblue) >> {
-    + suggest_meals(request): Response
-  }
-
-  class AssistantController << (C,lightblue) >> {
+    + suggest_meal(request): Response
     + chat_api(request): Response
     + save_content(request): Response
+    + edit_item_ai(request): Response
+    + delete_item(request): Response
     + shopping_list(request): Response
   }
 }
@@ -54,13 +53,16 @@ package "Services" {
     + authenticate_account(login, password): User
   }
 
-  class MealSuggesterService << (S,lightgreen) >> {
-    + suggest_meal(user, prompt): MealSuggestion
-  }
-
-  class DietAssistantService << (S, lightgreen) >> {
+  class DietAssistantService << (S,lightgreen) >> {
     + generate_diet_suggestion(user, message): dict
     + edit_content_with_ai(content, instruction): str
+  }
+
+  class MealSuggesterService << (S,lightgreen) >> {
+    + suggest_meal(user, prompt): MealSuggestionSchema
+  }
+
+  class ShoppingListService << (S,lightgreen) >> {
     + generate_shopping_list(contents): str
   }
 }
@@ -77,40 +79,59 @@ package "Helpers" {
   }
 
   abstract class BaseLLMClient << (H, lightpink) >> {
-    + generate_json(prompt, context): Response
+    + generate_json(prompt, schema, tools): dict
+    + generate_text(prompt, tools): str
   }
 
-  class ContextBuilderService << (H,lightpink) >> {
-    + get_user_context(user): dict
+  class ContextBuilder << (H,lightpink) >> {
+    + add_profile_data(): ContextBuilder
+    + add_history(): ContextBuilder
+    + add_restrictions(): ContextBuilder
+    + add_saved_contents(list): ContextBuilder
+    + build(): dict
   }
 
   class ActivationTokenService << (H,lightpink) >>
-  class PasswordResetTokenService << (S,lightpink) >>
-
+  class PasswordResetTokenService << (H,lightpink) >>
   class ActivationEmailService << (H,lightpink) >>
   class PasswordResetEmailService << (H,lightpink) >>
-
   class GeminiLLMClient << (H, lightpink) >>
+
+  class "Ferramentas de IA" as AITools << (H,lightpink) >> {
+    + search_food(query): str
+    + adjust_future_targets(user_id, type, kcal, days): str
+  }
 }
 
 package "Repositories" {
-    class NutritionalProfileRepository << (R, lightyellow) >> {
-        + update_targets(profile, bmr, target)
-    }
-    class FoodRepository << (R, lightyellow) >> {
-        + list_foods(query): QuerySet
-        + get_by_id(id): Food
-        + create_food(data): Food
-    }
-    class TrackerRepository << (R, lightyellow) >> {
-        + create_meal(user, label): Meal
-        + add_meal_item(meal, food, qty): MealItem
-    }
-    class UserRepository << (R, lightyellow) >> {
-        + create_user(data): User
-        + get_by_email(email): User
-        + exists_by_username(username): bool
-    }
+  class NutritionalProfileRepository << (R, lightyellow) >> {
+    + update_targets(profile, bmr, target)
+  }
+
+  class FoodRepository << (R, lightyellow) >> {
+    + list_foods(query): QuerySet
+    + get_by_id(id): Food
+    + create_food(data): Food
+  }
+
+  class TrackerRepository << (R, lightyellow) >> {
+    + create_meal(user, label): Meal
+    + add_meal_item(meal, food, qty): MealItem
+    + get_meal_items_for_user_from_date(user, date): QuerySet
+  }
+
+  class UserRepository << (R, lightyellow) >> {
+    + create_user(data): User
+    + get_by_email(email): User
+    + exists_by_username(username): bool
+  }
+
+  class ProfileRepository << (R, lightyellow) >> {
+    + create_diet(user, title, content): SavedDiet
+    + create_recipe(user, title, content): SavedRecipe
+    + list_diets(user): QuerySet
+    + list_recipes(user): QuerySet
+  }
 }
 
 package "Entities" {
@@ -119,6 +140,8 @@ package "Entities" {
   class Meal << (E,orange) >>
   class MealItem << (E,orange) >>
   class User << (E,orange) >>
+  class SavedDiet << (E,orange) >>
+  class SavedRecipe << (E,orange) >>
 }
 
 ' Controllers → Services
@@ -129,7 +152,8 @@ FoodsController --> FoodService
 FoodsController --> TrackerService
 TrackerController --> TrackerService
 AIEngineController --> MealSuggesterService
-AssistantController --> DietAssistantService
+AIEngineController --> DietAssistantService
+AIEngineController --> ShoppingListService
 
 ' Services → Repositories
 
@@ -137,13 +161,18 @@ UserService ----> UserRepository
 ProfileService ----> NutritionalProfileRepository
 FoodService ----> FoodRepository
 TrackerService ----> TrackerRepository
+ProfileService ----> ProfileRepository
 
 ' Services → Helpers
 
-MealSuggesterService ----> ContextBuilderService
-' DietAssistantService ----> ContextBuilderService futuramente
+MealSuggesterService ----> ContextBuilder
+DietAssistantService ----> ContextBuilder
+ShoppingListService ----> ContextBuilder
 MealSuggesterService ----> BaseLLMClient
-' DietAssistantService ----> BaseLLMClient futuramente
+DietAssistantService ----> BaseLLMClient
+ShoppingListService ----> BaseLLMClient
+MealSuggesterService ----> AITools
+DietAssistantService ----> AITools
 
 ' Repositories → Entities
 
@@ -152,6 +181,8 @@ NutritionalProfileRepository --> NutritionalProfile
 FoodRepository --> Food
 TrackerRepository --> Meal
 TrackerRepository --> MealItem
+ProfileRepository --> SavedDiet
+ProfileRepository --> SavedRecipe
 
 ' Services → Services
 

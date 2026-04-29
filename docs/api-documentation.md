@@ -131,7 +131,7 @@ Respostas de erro seguem o formato:
 ```
 
 **Erros:**
-- `400 Bad Request` – Credenciais inválidas.
+- `403 Forbidden` – Credenciais inválidas ou conta inativa.
 
 ### Logout
 
@@ -225,7 +225,7 @@ Respostas de erro seguem o formato:
 
 **Autenticação:** Necessária.
 
-**Descrição:** Exclui permanentemente a conta do usuário autenticado. Requer confirmação da senha.
+**Descrição:** Desativa (soft delete) a conta do usuário autenticado. Requer confirmação da senha.
 
 **Corpo da Requisição:**
 
@@ -767,13 +767,13 @@ Respostas de erro seguem o formato:
 }
 ```
 
----
-
-## API de Assistant
+**Erros:**
+- `400 Bad Request` – Perfil nutricional não preenchido ou histórico insuficiente.
+- `500 Internal Server Error` – Erro no motor de IA.
 
 ### Chat com Assistente de Dieta
 
-**Endpoint:** `POST /api/assistant/api/chat/`
+**Endpoint:** `POST /api/ai/api/chat/`
 
 **Autenticação:** Necessária.
 
@@ -796,9 +796,12 @@ Respostas de erro seguem o formato:
 }
 ```
 
+**Erros:**
+- `500 Internal Server Error` – Erro na IA.
+
 ### Salvar Conteúdo Gerado por IA
 
-**Endpoint:** `POST /api/assistant/api/save-content/`
+**Endpoint:** `POST /api/ai/api/save-content/`
 
 **Autenticação:** Necessária.
 
@@ -810,7 +813,16 @@ Respostas de erro seguem o formato:
 |-------|------|-------------|-----------|
 | `type` | string | Sim | `"dieta"` ou `"receita"`. |
 | `content` | string | Sim | Conteúdo em Markdown a ser salvo. |
-| `title` | string | Não | Título opcional. |
+| `title` | string | Não | Título opcional (extraído do conteúdo ou gerado automaticamente se omitido). |
+
+**Exemplo de Requisição:**
+```json
+{
+  "type": "dieta",
+  "content": "# Plano Alimentar\n\nCafé da manhã: ...",
+  "title": "Meu Plano"
+}
+```
 
 **Resposta:**
 
@@ -823,6 +835,48 @@ Respostas de erro seguem o formato:
 }
 ```
 
+**Erros:**
+- `400 Bad Request` – Tipo inválido ou conteúdo vazio.
+
+### Editar Conteúdo Salvo com IA
+
+**Endpoint:** `POST /api/ai/api/edit-item-ai/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Edita o conteúdo de uma dieta ou receita salva usando IA, baseado em uma instrução do usuário.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | integer | Sim | ID do item salvo. |
+| `type` | string | Sim | `"dieta"` ou `"receita"`. |
+| `instruction` | string | Sim | Instrução para a IA (ex.: "deixe a receita com menos carboidratos"). |
+
+**Resposta:**
+
+- `200 OK` – Redireciona para a página de itens salvos.
+
+### Excluir Conteúdo Salvo
+
+**Endpoint:** `POST /api/ai/api/delete-item/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Exclui uma dieta ou receita salva.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | integer | Sim | ID do item salvo. |
+| `type` | string | Sim | `"dieta"` ou `"receita"`. |
+
+**Resposta:**
+
+- `200 OK` – Redireciona para a página de itens salvos.
+
 ---
 
 ## Endpoints UI (Páginas Renderizadas no Servidor)
@@ -833,19 +887,20 @@ Estes endpoints retornam páginas HTML para a interface web. Eles não fazem par
 |----------|--------|-----------|
 | `GET /accounts/register/` | GET | Página de registro. |
 | `GET /accounts/login/` | GET | Página de login. |
-| `GET /accounts/verify‑email/<token>/` | GET | Página de verificação de email (ativa a conta). |
+| `GET /accounts/verify-email/<token>/` | GET | Página de verificação de email (ativa a conta). |
 | `GET /accounts/me/` | GET | Página de perfil do usuário. |
-| `GET /accounts/password‑reset/` | GET | Página de solicitação de redefinição de senha. |
-| `GET /accounts/password‑reset/done/` | GET | Página de confirmação após solicitação de redefinição de senha. |
-| `GET /accounts/password‑reset/confirm/<token>/` | GET | Página para definir nova senha. |
-| `GET /accounts/password‑reset/success/` | GET | Página de sucesso após redefinição de senha. |
-| `GET /profiles/nutritional‑profile/` | GET | Página de gerenciamento de perfil nutricional. |
+| `GET /accounts/password-reset/` | GET | Página de solicitação de redefinição de senha. |
+| `GET /accounts/password-reset/done/` | GET | Página de confirmação após solicitação de redefinição de senha. |
+| `GET /accounts/password-reset/confirm/<token>/` | GET | Página para definir nova senha. |
+| `GET /accounts/password-reset/success/` | GET | Página de sucesso após redefinição de senha. |
+| `GET /profiles/nutritional-profile/` | GET | Página de gerenciamento de perfil nutricional. |
+| `GET /foods/new/` | GET | Página de cadastro de novo alimento. |
 | `GET /tracker/` | GET | Painel de rastreamento de refeições. |
-| `GET /assistant/chat/` | GET | Página do chat do assistente de dieta. |
-| `GET /assistant/salvos/` | GET | Página de itens (dietas/receitas) salvos. |
-| `GET /assistant/lista-compras/` | GET | Página de geração de lista de compras. |
+| `GET /ai/chat/` | GET | Página do chat do assistente de dieta. |
+| `GET /ai/salvos/` | GET | Página de itens (dietas/receitas) salvos. |
+| `GET /ai/lista-compras/` | GET | Página de geração de lista de compras. |
 
-Todos os endpoints UI requerem autenticação por sessão (exceto registro, login, verify‑email e páginas de password‑reset). Eles são destinados à interação humana via navegador web.
+Todos os endpoints UI requerem autenticação por sessão (exceto registro, login, verify-email e páginas de password-reset). Eles são destinados à interação humana via navegador web.
 
 ---
 
