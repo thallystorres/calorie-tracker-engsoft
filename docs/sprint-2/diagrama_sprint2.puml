@@ -1,0 +1,181 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+hide empty members
+
+package "Controllers" {
+  class ProfilesController << (C,lightblue) >> {
+    + create_profile(request): Response
+    + update_profile(request): Response
+  }
+
+  class FoodsController << (C,lightblue) >> {
+    + list_foods(request): Response
+    + create_food(request): Response
+  }
+
+  class TrackerController << (C,lightblue) >> {
+    + log_meal(request): Response
+  }
+
+    class AccountsController << (C,lightblue) >> {
+    + register(request): Response
+    + login(request): Response
+  }
+
+  class AIEngineController << (C,lightblue) >> {
+    + suggest_meals(request): Response
+  }
+
+  class AssistantController << (C,lightblue) >> {
+    + chat_api(request): Response
+    + save_content(request): Response
+    + shopping_list(request): Response
+  }
+}
+
+package "Services" {
+  class ProfileService << (S,lightgreen) >> {
+    + upsert_profile(profile, data): NutritionalProfile
+    + calculate_bmr(weight, height, age, sex): Decimal
+  }
+
+  class FoodService << (S,lightgreen) >> {
+    + list_foods(query): Food[]
+    + get_food_or_404(food_id): Food
+  }
+
+  class TrackerService << (S,lightgreen) >> {
+    + log_meal(user, data): (Meal, warnings)
+  }
+
+  class UserService << (S,lightgreen) >> {
+    + create_account(data): User
+    + authenticate_account(login, password): User
+  }
+
+  class MealSuggesterService << (S,lightgreen) >> {
+    + suggest_meal(user, prompt): MealSuggestion
+  }
+
+  class DietAssistantService << (S, lightgreen) >> {
+    + generate_diet_suggestion(user, message): dict
+    + edit_content_with_ai(content, instruction): str
+    + generate_shopping_list(contents): str
+  }
+}
+
+package "Helpers" {
+  abstract class BaseSignedTokenService << (H,lightpink) >> {
+    + generate(user): str
+    + validate(token): (int, str)
+  }
+
+  abstract class BaseEmailService << (H,lightpink) >> {
+    + send_email(user, token, request)
+    + build_message(user, url): str
+  }
+
+  abstract class BaseLLMClient << (H, lightpink) >> {
+    + generate_json(prompt, context): Response
+  }
+
+  class ContextBuilderService << (H,lightpink) >> {
+    + get_user_context(user): dict
+  }
+
+  class ActivationTokenService << (H,lightpink) >>
+  class PasswordResetTokenService << (S,lightpink) >>
+
+  class ActivationEmailService << (H,lightpink) >>
+  class PasswordResetEmailService << (H,lightpink) >>
+
+  class GeminiLLMClient << (H, lightpink) >>
+}
+
+package "Repositories" {
+    class NutritionalProfileRepository << (R, lightyellow) >> {
+        + update_targets(profile, bmr, target)
+    }
+    class FoodRepository << (R, lightyellow) >> {
+        + list_foods(query): QuerySet
+        + get_by_id(id): Food
+        + create_food(data): Food
+    }
+    class TrackerRepository << (R, lightyellow) >> {
+        + create_meal(user, label): Meal
+        + add_meal_item(meal, food, qty): MealItem
+    }
+    class UserRepository << (R, lightyellow) >> {
+        + create_user(data): User
+        + get_by_email(email): User
+        + exists_by_username(username): bool
+    }
+}
+
+package "Entities" {
+  class NutritionalProfile << (E,orange) >>
+  class Food << (E,orange) >>
+  class Meal << (E,orange) >>
+  class MealItem << (E,orange) >>
+  class User << (E,orange) >>
+}
+
+' Controllers → Services
+
+AccountsController --> UserService
+ProfilesController --> ProfileService
+FoodsController --> FoodService
+FoodsController --> TrackerService
+TrackerController --> TrackerService
+AIEngineController --> MealSuggesterService
+AssistantController --> DietAssistantService
+
+' Services → Repositories
+
+UserService ----> UserRepository
+ProfileService ----> NutritionalProfileRepository
+FoodService ----> FoodRepository
+TrackerService ----> TrackerRepository
+
+' Services → Helpers
+
+MealSuggesterService ----> ContextBuilderService
+' DietAssistantService ----> ContextBuilderService futuramente
+MealSuggesterService ----> BaseLLMClient
+' DietAssistantService ----> BaseLLMClient futuramente
+
+' Repositories → Entities
+
+UserRepository --> User
+NutritionalProfileRepository --> NutritionalProfile
+FoodRepository --> Food
+TrackerRepository --> Meal
+TrackerRepository --> MealItem
+
+' Services → Services
+
+UserService --> BaseSignedTokenService
+UserService --> BaseEmailService
+
+' Herança
+
+ActivationTokenService -u-|> BaseSignedTokenService
+PasswordResetTokenService -u-|> BaseSignedTokenService
+
+ActivationEmailService -u-|> BaseEmailService
+PasswordResetEmailService -u-|> BaseEmailService
+
+GeminiLLMClient -u-|> BaseLLMClient
+
+note right of Controllers
+<u>Observações</u>
+Este diagrama é uma representação conceitual simplificada e não mantém uma
+correspondência estrita (1:1) com as classes reais do projeto.
+
+Para fins de legibilidade, alguns métodos foram omitidos. Os "Controllers"
+exibidos representam as Django Views, que desempenham um papel análogo
+aos controladores em uma arquitetura em camadas tradicional.
+end note
+
+@enduml
