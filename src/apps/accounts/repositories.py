@@ -23,10 +23,10 @@ class UserRepository:
         return User.objects.filter(email__iexact=email).first()
 
     def get_by_username_or_email(self, identifier: str) -> User | None:
-        user = UserRepository.get_by_username(identifier)
+        user = self.get_by_username(identifier)
         if user is not None:
             return user
-        return UserRepository.get_by_email(identifier)
+        return self.get_by_email(identifier)
 
     def activate(self, user: User) -> None:
         user.is_active = True

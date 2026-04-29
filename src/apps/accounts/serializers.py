@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .dependencies import get_user_service
+from .dependencies import get_user_repository, get_user_service
 from .repositories import UserRepository
 
 
@@ -31,16 +31,20 @@ class AccountRegisterSerializer(serializers.ModelSerializer):
             "confirm_password",
         )
 
+    def __init__(self, *args, **kwargs):
+        self.user_repository = kwargs.pop("user_repository", get_user_repository())
+        super().__init__(*args, **kwargs)
+
     def validate_username(self, value: str) -> str:
         msg = "Nome do usuário já está em uso"
-        if UserRepository.exists_by_username(value):
+        if self.user_repository.exists_by_username(value):
             raise serializers.ValidationError(msg)
         return value
 
     def validate_email(self, value: str) -> str:
         msg = "E-mail já está em uso."
         email = value.strip().lower()
-        if UserRepository.exists_by_email(email):
+        if self.user_repository.exists_by_email(email):
             raise serializers.ValidationError(msg)
         return email
 
@@ -62,13 +66,17 @@ class AccountSerializer(serializers.ModelSerializer):
         fields = ("id", "username", "email", "first_name", "last_name")
         read_only_fields = ("id", "username")
 
+    def __init__(self, *args, **kwargs):
+        self.user_repository = kwargs.pop("user_repository", get_user_repository())
+        super().__init__(*args, **kwargs)
+
     def validate_email(self, value: str) -> str:
         msg = "E-mail já está em uso."
         email = value.strip().lower()
         user = self.instance
         if user is None:
             return email
-        if UserRepository.exists_by_email(email, user.id):
+        if self.user_repository.exists_by_email(email, user.id):
             raise serializers.ValidationError(msg)
         return email
 
@@ -77,12 +85,15 @@ class AccountLoginSerializer(serializers.Serializer):
     username_or_email = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
+    def __init__(self, *args, **kwargs):
+        self.user_service = kwargs.pop("user_service", get_user_service())
+        super().__init__(*args, **kwargs)
+
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        service = get_user_service()
         username_or_email = attrs["username_or_email"].strip()
         password = attrs["password"]
 
-        user = service.authenticate_account(
+        user = self.user_service.authenticate_account(
             username_or_email=username_or_email, password=password
         )
         attrs["user"] = user
