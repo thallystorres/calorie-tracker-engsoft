@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -63,23 +63,24 @@ class ActivationTokenServiceTests(TestCase):
     def test_validate_raises_validation_error_for_expired_token(self) -> None:
         signer = MagicMock()
         signer.unsign.side_effect = SignatureExpired("expired")
+        self.service.signer = MagicMock(return_value=signer)
 
-        with patch.object(self.service, "signer", return_value=signer):
-            with self.assertRaises(ValidationError):
-                self.service.validate("token")
+        with self.assertRaises(ValidationError):
+            self.service.validate("token")
 
     def test_validate_raises_validation_error_for_tampered_token(self) -> None:
         signer = MagicMock()
         signer.unsign.side_effect = BadSignature("invalid")
+        self.service.signer = MagicMock(return_value=signer)
 
-        with patch.object(self.service, "signer", return_value=signer):
-            with self.assertRaises(ValidationError):
-                self.service.validate("token")
+        with self.assertRaises(ValidationError):
+            self.service.validate("token")
 
     def test_validate_raises_validation_error_for_malformed_payload(self) -> None:
-        with patch.object(self.service, "_unsign", return_value="malformed"):
-            with self.assertRaises(ValidationError):
-                self.service.validate("token")
+        self.service._unsign = MagicMock(return_value="malformed")
+
+        with self.assertRaises(ValidationError):
+            self.service.validate("token")
 
 
 class PasswordResetTokenServiceTests(TestCase):
@@ -101,23 +102,24 @@ class PasswordResetTokenServiceTests(TestCase):
     def test_validate_raises_validation_error_for_expired_token(self) -> None:
         signer = MagicMock()
         signer.unsign.side_effect = SignatureExpired("expired")
+        self.service.signer = MagicMock(return_value=signer)
 
-        with patch.object(self.service, "signer", return_value=signer):
-            with self.assertRaises(ValidationError):
-                self.service.validate("token")
+        with self.assertRaises(ValidationError):
+            self.service.validate("token")
 
     def test_validate_raises_validation_error_for_tampered_token(self) -> None:
         signer = MagicMock()
         signer.unsign.side_effect = BadSignature("invalid")
+        self.service.signer = MagicMock(return_value=signer)
 
-        with patch.object(self.service, "signer", return_value=signer):
-            with self.assertRaises(ValidationError):
-                self.service.validate("token")
+        with self.assertRaises(ValidationError):
+            self.service.validate("token")
 
     def test_validate_raises_validation_error_for_malformed_payload(self) -> None:
-        with patch.object(self.service, "_unsign", return_value="malformed"):
-            with self.assertRaises(ValidationError):
-                self.service.validate("token")
+        self.service._unsign = MagicMock(return_value="malformed")
+
+        with self.assertRaises(ValidationError):
+            self.service.validate("token")
 
 
 class UserServiceTests(TestCase):
@@ -154,19 +156,19 @@ class UserServiceTests(TestCase):
     def test_create_account_sends_activation_email(self) -> None:
         user = User(username="new", email="new@example.com", is_active=False)
         self.repo.create_user.return_value = user
+        self.service._send_activation_email = MagicMock()
 
-        with patch.object(self.service, "_send_activation_email") as mocked_send:
-            self.service.create_account(
-                {
-                    "username": "new",
-                    "email": "new@example.com",
-                    "first_name": "N",
-                    "last_name": "U",
-                    "password": "Forte@1234",
-                }
-            )
+        self.service.create_account(
+            {
+                "username": "new",
+                "email": "new@example.com",
+                "first_name": "N",
+                "last_name": "U",
+                "password": "Forte@1234",
+            }
+        )
 
-        mocked_send.assert_called_once_with(user, None)
+        self.service._send_activation_email.assert_called_once_with(user, None)
 
     def test_authenticate_account_returns_user_for_valid_credentials(self) -> None:
         user = create_user(username="valid", password="Forte@1234", is_active=True)
@@ -282,17 +284,17 @@ class UserServiceTests(TestCase):
             is_active=True,
         )
         self.repo.update_user.return_value = updated
+        self.service._send_activation_email = MagicMock()
 
-        with patch.object(self.service, "_send_activation_email") as mocked_send:
-            _, email_changed = self.service.update_account(
-                user=user,
-                validated_data={"email": "new@example.com"},
-                request=HttpRequest(),
-            )
+        _, email_changed = self.service.update_account(
+            user=user,
+            validated_data={"email": "new@example.com"},
+            request=HttpRequest(),
+        )
 
         self.assertTrue(email_changed)
         self.repo.deactivate.assert_called_once_with(updated)
-        mocked_send.assert_called_once()
+        self.service._send_activation_email.assert_called_once()
 
     def test_delete_account_deactivates_active_account(self) -> None:
         user = create_user(is_active=True)
@@ -312,29 +314,29 @@ class UserServiceTests(TestCase):
 
     def test_request_password_reset_does_not_send_for_missing_user(self) -> None:
         self.repo.get_by_email.return_value = None
+        self.service._send_token_email = MagicMock()
 
-        with patch.object(self.service, "_send_token_email") as mocked_send:
-            self.service.request_password_reset(email="missing@example.com")
+        self.service.request_password_reset(email="missing@example.com")
 
-        mocked_send.assert_not_called()
+        self.service._send_token_email.assert_not_called()
 
     def test_request_password_reset_does_not_send_for_inactive_user(self) -> None:
         user = create_user(username="u2", email="u2@example.com", is_active=False)
         self.repo.get_by_email.return_value = user
+        self.service._send_token_email = MagicMock()
 
-        with patch.object(self.service, "_send_token_email") as mocked_send:
-            self.service.request_password_reset(email="u2@example.com")
+        self.service.request_password_reset(email="u2@example.com")
 
-        mocked_send.assert_not_called()
+        self.service._send_token_email.assert_not_called()
 
     def test_request_password_reset_sends_for_active_user(self) -> None:
         user = create_user(username="u3", email="u3@example.com", is_active=True)
         self.repo.get_by_email.return_value = user
+        self.service._send_token_email = MagicMock()
 
-        with patch.object(self.service, "_send_token_email") as mocked_send:
-            self.service.request_password_reset(email="u3@example.com")
+        self.service.request_password_reset(email="u3@example.com")
 
-        mocked_send.assert_called_once()
+        self.service._send_token_email.assert_called_once()
 
     def test_reset_password_with_token_updates_password(self) -> None:
         user = create_user(username="u4", email="u4@example.com", is_active=True)
@@ -353,13 +355,7 @@ class UserServiceTests(TestCase):
         self.password_reset_token_service.validate.return_value = (user.id, user.email)
         self.repo.get_by_user_id.return_value = user
 
-        with (
-            patch(
-                "apps.accounts.services.validate_password",
-                side_effect=DjangoValidationError(["Senha fraca"]),
-            ),
-            self.assertRaises(ValidationError),
-        ):
+        with self.assertRaises(ValidationError):
             self.service.reset_password_with_token(token="valid", new_password="123")
 
     def test_reset_password_with_token_raises_for_missing_user(self) -> None:
@@ -404,17 +400,15 @@ class ActivationEmailServiceTests(TestCase):
         with self.assertRaises(ValidationError):
             self.service.build_url(token="abc", request=None)
 
-    @patch("apps.accounts.services.send_mail")
-    def test_send_email_calls_send_mail_with_correct_recipient(
-        self, mocked_send_mail
-    ) -> None:
+    def test_send_email_calls_send_mail_with_correct_recipient(self) -> None:
+        self.service._send_text_email = MagicMock()
         request = self.factory.get("/")
 
         self.service.send_email(user=self.user, token="abc", request=request)
 
-        mocked_send_mail.assert_called_once()
-        kwargs = mocked_send_mail.call_args.kwargs
-        self.assertEqual(kwargs["recipient_list"], ["mail@example.com"])
+        self.service._send_text_email.assert_called_once()
+        kwargs = self.service._send_text_email.call_args.kwargs
+        self.assertEqual(kwargs["recipient"], "mail@example.com")
 
 
 class PasswordResetEmailServiceTests(TestCase):
@@ -433,22 +427,23 @@ class PasswordResetEmailServiceTests(TestCase):
         with self.assertRaises(ValidationError):
             self.service.build_url(token="abc", request=None)
 
-    @patch("apps.accounts.services.send_mail")
-    def test_send_email_calls_send_mail_with_correct_recipient(
-        self, mocked_send_mail
-    ) -> None:
+    def test_send_email_calls_send_mail_with_correct_recipient(self) -> None:
+        self.service._send_text_email = MagicMock()
         request = self.factory.get("/")
 
         self.service.send_email(user=self.user, token="abc", request=request)
 
-        mocked_send_mail.assert_called_once()
-        kwargs = mocked_send_mail.call_args.kwargs
-        self.assertEqual(kwargs["recipient_list"], ["mail2@example.com"])
+        self.service._send_text_email.assert_called_once()
+        kwargs = self.service._send_text_email.call_args.kwargs
+        self.assertEqual(kwargs["recipient"], "mail2@example.com")
 
 
 class UserRepositoryTests(TestCase):
+    def setUp(self) -> None:
+        self.repo = UserRepository()
+
     def test_create_user_persists_with_hashed_password(self) -> None:
-        user = UserRepository.create_user(
+        user = self.repo.create_user(
             username="repo_user",
             email="repo@example.com",
             first_name="Repo",
@@ -461,52 +456,52 @@ class UserRepositoryTests(TestCase):
 
     def test_exists_by_username_returns_true_for_existing_user(self) -> None:
         create_user(username="exists_username", email="a1@example.com")
-        self.assertTrue(UserRepository.exists_by_username("exists_username"))
+        self.assertTrue(self.repo.exists_by_username("exists_username"))
 
     def test_exists_by_email_returns_true_ignoring_case(self) -> None:
         create_user(username="exists_email", email="exists@example.com")
-        self.assertTrue(UserRepository.exists_by_email("EXISTS@example.com"))
+        self.assertTrue(self.repo.exists_by_email("EXISTS@example.com"))
 
     def test_exists_by_email_ignores_current_user_when_user_id_provided(self) -> None:
         user = create_user(username="same_user", email="same@example.com")
-        self.assertFalse(UserRepository.exists_by_email("same@example.com", user.id))
+        self.assertFalse(self.repo.exists_by_email("same@example.com", user.id))
 
     def test_get_by_username_returns_correct_user(self) -> None:
         user = create_user(username="by_username", email="by_username@example.com")
-        found = UserRepository.get_by_username("by_username")
+        found = self.repo.get_by_username("by_username")
         self.assertEqual(found.id, user.id)
 
     def test_get_by_email_returns_correct_user_ignoring_case(self) -> None:
         user = create_user(username="by_email", email="by_email@example.com")
-        found = UserRepository.get_by_email("BY_EMAIL@example.com")
+        found = self.repo.get_by_email("BY_EMAIL@example.com")
         self.assertEqual(found.id, user.id)
 
     def test_get_by_username_or_email_finds_by_username(self) -> None:
         user = create_user(username="find_u", email="find_u@example.com")
-        found = UserRepository.get_by_username_or_email("find_u")
+        found = self.repo.get_by_username_or_email("find_u")
         self.assertEqual(found.id, user.id)
 
     def test_get_by_username_or_email_finds_by_email(self) -> None:
         user = create_user(username="find_e", email="find_e@example.com")
-        found = UserRepository.get_by_username_or_email("find_e@example.com")
+        found = self.repo.get_by_username_or_email("find_e@example.com")
         self.assertEqual(found.id, user.id)
 
     def test_get_by_username_or_email_returns_none_for_missing(self) -> None:
-        self.assertIsNone(UserRepository.get_by_username_or_email("missing"))
+        self.assertIsNone(self.repo.get_by_username_or_email("missing"))
 
     def test_get_by_user_id_returns_correct_user(self) -> None:
         user = create_user(username="by_id", email="by_id@example.com")
-        found = UserRepository.get_by_user_id(user.id)
+        found = self.repo.get_by_user_id(user.id)
         self.assertEqual(found.id, user.id)
 
     def test_get_by_user_id_returns_none_for_missing_id(self) -> None:
-        self.assertIsNone(UserRepository.get_by_user_id(987654))
+        self.assertIsNone(self.repo.get_by_user_id(987654))
 
     def test_activate_sets_user_active(self) -> None:
         user = create_user(
             username="inactive_repo", email="inactive_repo@example.com", is_active=False
         )
-        UserRepository.activate(user)
+        self.repo.activate(user)
         user.refresh_from_db()
         self.assertTrue(user.is_active)
 
@@ -514,7 +509,7 @@ class UserRepositoryTests(TestCase):
         user = create_user(
             username="active_repo", email="active_repo@example.com", is_active=True
         )
-        UserRepository.deactivate(user)
+        self.repo.deactivate(user)
         user.refresh_from_db()
         self.assertFalse(user.is_active)
 
@@ -526,7 +521,7 @@ class UserRepositoryTests(TestCase):
         )
         old_username = user.username
 
-        UserRepository.update_user(
+        self.repo.update_user(
             user=user,
             data={
                 "email": "updated@example.com",
@@ -549,7 +544,7 @@ class UserRepositoryTests(TestCase):
             password="Velha@12345",
         )
 
-        UserRepository.update_password(user=user, new_password="Nova@12345")
+        self.repo.update_password(user=user, new_password="Nova@12345")
         user.refresh_from_db()
 
         self.assertTrue(user.check_password("Nova@12345"))
@@ -664,17 +659,14 @@ class SerializerTests(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("email", serializer.errors)
 
-    @patch("apps.accounts.serializers.get_user_service")
-    def test_account_login_serializer_validates_and_injects_user(
-        self, mocked_get_service
-    ) -> None:
+    def test_account_login_serializer_validates_and_injects_user(self) -> None:
         user = create_user(username="login_ser", email="login_ser@example.com")
         mocked_service = MagicMock()
         mocked_service.authenticate_account.return_value = user
-        mocked_get_service.return_value = mocked_service
 
         serializer = AccountLoginSerializer(
-            data={"username_or_email": " login_ser ", "password": "Forte@1234"}
+            data={"username_or_email": " login_ser ", "password": "Forte@1234"},
+            user_service=mocked_service,
         )
 
         self.assertTrue(serializer.is_valid(), serializer.errors)

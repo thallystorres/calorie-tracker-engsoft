@@ -5,7 +5,10 @@ from .services import ProfileService
 
 
 @cache
+def get_profile_repository() -> NutritionalProfileRepository:
+    return NutritionalProfileRepository()
+
+
+@cache
 def get_profile_service() -> ProfileService:
-    return ProfileService(
-        repository=NutritionalProfileRepository()
-    )
+    return ProfileService(repository=get_profile_repository())

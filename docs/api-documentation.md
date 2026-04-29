@@ -131,7 +131,7 @@ Respostas de erro seguem o formato:
 ```
 
 **Erros:**
-- `400 Bad Request` – Credenciais inválidas.
+- `403 Forbidden` – Credenciais inválidas ou conta inativa.
 
 ### Logout
 
@@ -225,7 +225,7 @@ Respostas de erro seguem o formato:
 
 **Autenticação:** Necessária.
 
-**Descrição:** Exclui permanentemente a conta do usuário autenticado. Requer confirmação da senha.
+**Descrição:** Desativa (soft delete) a conta do usuário autenticado. Requer confirmação da senha.
 
 **Corpo da Requisição:**
 
@@ -724,6 +724,161 @@ Respostas de erro seguem o formato:
 
 ---
 
+## API de AI Engine
+
+### Sugerir Refeição
+
+**Endpoint:** `POST /api/ai/suggest_meal/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Gera uma sugestão de refeição personalizada com base no perfil do usuário e um prompt opcional.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `user_prompt` | string | Não | Preferências ou ingredientes que o usuário deseja incluir. |
+
+**Exemplo de Requisição:**
+```json
+{
+  "user_prompt": "Quero algo com frango e batata doce"
+}
+```
+
+**Resposta:**
+
+- `200 OK`
+
+```json
+{
+  "meal_name": "Frango Grelhado com Purê de Batata Doce",
+  "ingredients": [
+    { "name": "Peito de Frango", "quantity_grams": 150.0 },
+    { "name": "Batata Doce", "quantity_grams": 200.0 }
+  ],
+  "estimated_calories": 450.0,
+  "target_adjustments": {
+    "applied": true,
+    "description": "Meta ajustada para compensar o déficit de ontem."
+  },
+  "warning": "..."
+}
+```
+
+**Erros:**
+- `400 Bad Request` – Perfil nutricional não preenchido ou histórico insuficiente.
+- `500 Internal Server Error` – Erro no motor de IA.
+
+### Chat com Assistente de Dieta
+
+**Endpoint:** `POST /api/ai/api/chat/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Conversa com a IA para obter sugestões de dietas, receitas ou esclarecer dúvidas.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `message` | string | Sim | Mensagem do usuário para a IA. |
+
+**Resposta:**
+
+- `200 OK`
+
+```json
+{
+  "reply": "Aqui está uma sugestão de receita...",
+  "type": "receita"
+}
+```
+
+**Erros:**
+- `500 Internal Server Error` – Erro na IA.
+
+### Salvar Conteúdo Gerado por IA
+
+**Endpoint:** `POST /api/ai/api/save-content/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Salva uma dieta ou receita gerada pela IA no perfil do usuário.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `type` | string | Sim | `"dieta"` ou `"receita"`. |
+| `content` | string | Sim | Conteúdo em Markdown a ser salvo. |
+| `title` | string | Não | Título opcional (extraído do conteúdo ou gerado automaticamente se omitido). |
+
+**Exemplo de Requisição:**
+```json
+{
+  "type": "dieta",
+  "content": "# Plano Alimentar\n\nCafé da manhã: ...",
+  "title": "Meu Plano"
+}
+```
+
+**Resposta:**
+
+- `201 Created`
+
+```json
+{
+  "status": "success",
+  "message": "Salvo com sucesso!"
+}
+```
+
+**Erros:**
+- `400 Bad Request` – Tipo inválido ou conteúdo vazio.
+
+### Editar Conteúdo Salvo com IA
+
+**Endpoint:** `POST /api/ai/api/edit-item-ai/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Edita o conteúdo de uma dieta ou receita salva usando IA, baseado em uma instrução do usuário.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | integer | Sim | ID do item salvo. |
+| `type` | string | Sim | `"dieta"` ou `"receita"`. |
+| `instruction` | string | Sim | Instrução para a IA (ex.: "deixe a receita com menos carboidratos"). |
+
+**Resposta:**
+
+- `200 OK` – Redireciona para a página de itens salvos.
+
+### Excluir Conteúdo Salvo
+
+**Endpoint:** `POST /api/ai/api/delete-item/`
+
+**Autenticação:** Necessária.
+
+**Descrição:** Exclui uma dieta ou receita salva.
+
+**Corpo da Requisição:**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | integer | Sim | ID do item salvo. |
+| `type` | string | Sim | `"dieta"` ou `"receita"`. |
+
+**Resposta:**
+
+- `200 OK` – Redireciona para a página de itens salvos.
+
+---
+
 ## Endpoints UI (Páginas Renderizadas no Servidor)
 
 Estes endpoints retornam páginas HTML para a interface web. Eles não fazem parte da API REST, mas são listados aqui para completude.
@@ -732,16 +887,20 @@ Estes endpoints retornam páginas HTML para a interface web. Eles não fazem par
 |----------|--------|-----------|
 | `GET /accounts/register/` | GET | Página de registro. |
 | `GET /accounts/login/` | GET | Página de login. |
-| `GET /accounts/verify‑email/<token>/` | GET | Página de verificação de email (ativa a conta). |
+| `GET /accounts/verify-email/<token>/` | GET | Página de verificação de email (ativa a conta). |
 | `GET /accounts/me/` | GET | Página de perfil do usuário. |
-| `GET /accounts/password‑reset/` | GET | Página de solicitação de redefinição de senha. |
-| `GET /accounts/password‑reset/done/` | GET | Página de confirmação após solicitação de redefinição de senha. |
-| `GET /accounts/password‑reset/confirm/<token>/` | GET | Página para definir nova senha. |
-| `GET /accounts/password‑reset/success/` | GET | Página de sucesso após redefinição de senha. |
-| `GET /profiles/nutritional‑profile/` | GET | Página de gerenciamento de perfil nutricional. |
+| `GET /accounts/password-reset/` | GET | Página de solicitação de redefinição de senha. |
+| `GET /accounts/password-reset/done/` | GET | Página de confirmação após solicitação de redefinição de senha. |
+| `GET /accounts/password-reset/confirm/<token>/` | GET | Página para definir nova senha. |
+| `GET /accounts/password-reset/success/` | GET | Página de sucesso após redefinição de senha. |
+| `GET /profiles/nutritional-profile/` | GET | Página de gerenciamento de perfil nutricional. |
+| `GET /foods/new/` | GET | Página de cadastro de novo alimento. |
 | `GET /tracker/` | GET | Painel de rastreamento de refeições. |
+| `GET /ai/chat/` | GET | Página do chat do assistente de dieta. |
+| `GET /ai/salvos/` | GET | Página de itens (dietas/receitas) salvos. |
+| `GET /ai/lista-compras/` | GET | Página de geração de lista de compras. |
 
-Todos os endpoints UI requerem autenticação por sessão (exceto registro, login, verify‑email e páginas de password‑reset). Eles são destinados à interação humana via navegador web.
+Todos os endpoints UI requerem autenticação por sessão (exceto registro, login, verify-email e páginas de password-reset). Eles são destinados à interação humana via navegador web.
 
 ---
 

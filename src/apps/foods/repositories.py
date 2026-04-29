@@ -1,12 +1,11 @@
 from typing import Any
 
-from django.db.models import QuerySet
-
+# from django.db.models import QuerySet
 from .models import Food
 
 
 class FoodRepository:
-    def list_foods(self, *, query: str | None) -> QuerySet[Food]:
+    def list_foods(self, *, query: str | None = None):
         qs = Food.objects.all().order_by("name")
 
         if query:

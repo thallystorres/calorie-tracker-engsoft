@@ -9,13 +9,17 @@ from apps.foods.allergens import (
 )
 from apps.profiles.restrictions import extract_user_restriction_codes
 
-from .models import Meal, MealItem
+from .models import Meal
+from .repositories import MealRepository
 
 if TYPE_CHECKING:
     from apps.foods.models import Food
 
 
 class TrackerService:
+    def __init__(self, meal_repository: MealRepository):
+        self._repo = meal_repository
+
     def _extract_profile_restrictions(self, user: User) -> set[str]:
         restriction_codes = extract_user_restriction_codes(user)
         return normalize_profile_restrictions(restriction_codes)
@@ -24,9 +28,9 @@ class TrackerService:
     def log_meal(self, *, user: User, validated_data: dict) -> tuple[Meal, list[str]]:
         label = validated_data["label"]
         items_data = validated_data["items"]
-
         warnings: list[str] = []
-        meal = Meal.objects.create(user=user, label=label)
+
+        meal = self._repo.create_meal(user=user, label=label)
 
         for item in items_data:
             food: Food = item["food_id"]
@@ -40,9 +44,11 @@ class TrackerService:
                     conflicts_text = ", ".join(sorted(conflicts)).title()
                     warnings.append(
                         f'Atenção: O alimento "{food.name}" possui componentes '
-                        f"{conflicts_text} que conflitam com as suas "
-                        f"restrições alimentares"
+                        f"{conflicts_text} que conflitam com as suas restrições"
                     )
-            MealItem.objects.create(meal=meal, food=food, quantity_grams=quantity_grams)
+
+            self._repo.create_meal_item(
+                meal=meal, food=food, quantity_grams=quantity_grams
+            )
 
         return meal, warnings
