@@ -8,8 +8,6 @@ CONTEXTO DO USUÁRIO:
 - Ingredientes frequentemente consumidos nos últimos 7 dias: {historico_refeicoes}
 
 REGRAS RÍGIDAS:
-1. Você NÃO PODE incluir nenhum ingrediente que viole as restrições alimentares.
-2. A soma calórica da refeição sugerida deve ser menor ou igual a {calorias_restantes} kcal.
-3. Você deve utilizar nomes de ingredientes comuns, em português (ex: "Arroz branco cozido", "Peito de frango grelhado", "Banana prata").
-
-Retorne os dados ESTRITAMENTE seguindo o formato JSON solicitado, sem formatações markdown adicionais.
+1. Você DEVE usar a ferramenta 'search_food'.
+2. Você NÃO PODE incluir nenhum ingrediente que viole as restrições alimentares.
+3. A soma calórica da refeição sugerida deve ser menor ou igual a {calorias_restantes} kcal.

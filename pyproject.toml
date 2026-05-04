@@ -18,10 +18,7 @@ dependencies = [
   "django-jazzmin>=3.0.4",
   "requests>=2.33.1",
   "openfoodfacts>=5.0.1",
-  "langchain>=1.2.15",
-  "langchain-google-genai>=4.2.2",
   "djangorestframework-stubs>=3.16.9",
-  "langgraph>=1.1.9",
   "google-genai>=1.73.1",
   "pydantic>=2.13.3",
 ]

@@ -5,12 +5,13 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from apps.profiles.dependencies import get_profile_service
 from apps.profiles.models import FoodRestriction, NutritionalProfile
 
 
 class ProfileServiceTests(TestCase):
     def setUp(self):
-        self.service = ProfileService(repository=None)
+        self.service = get_profile_service()
 
     def test_calculate_bmr_for_male(self):
         # Peso: 80kg, Altura: 180cm, Idade: 30 anos

@@ -2,19 +2,18 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from apps.foods.models import Food
-from apps.tracker.models import Meal
+from apps.foods.dependencies import get_food_repository
+
+from .dependencies import get_meal_repository
 
 
 @require_GET
 @login_required
 def tracker_page(request):
-    foods = Food.objects.all().order_by("name")
-    meals = (
-        Meal.objects.filter(user=request.user)
-        .prefetch_related("items__food")
-        .order_by("-eaten_at")
-    )
+    meals_repo = get_meal_repository()
+    foods_repo = get_food_repository()
+    foods = foods_repo.list_foods()
+    meals = meals_repo.get_meals_for_user(user=request.user)
     return render(
         request,
         "tracker/tracker.html",

@@ -4,12 +4,6 @@ skinparam packageStyle rectangle
 hide empty members
 
 package "Controllers" {
-
-  class AccountsController << (C,lightblue) >> {
-    + register(request): Response
-    + login(request): Response
-  }
-
   class ProfilesController << (C,lightblue) >> {
     + create_profile(request): Response
     + update_profile(request): Response
@@ -24,19 +18,23 @@ package "Controllers" {
     + log_meal(request): Response
   }
 
+    class AccountsController << (C,lightblue) >> {
+    + register(request): Response
+    + login(request): Response
+  }
+
   class AIEngineController << (C,lightblue) >> {
     + suggest_meals(request): Response
-    + generate_shopping_list(request): Response
+  }
+
+  class AssistantController << (C,lightblue) >> {
+    + chat_api(request): Response
+    + save_content(request): Response
+    + shopping_list(request): Response
   }
 }
 
 package "Services" {
-
-  class UserService << (S,lightgreen) >> {
-    + create_account(data): User
-    + authenticate_account(login, password): User
-  }
-
   class ProfileService << (S,lightgreen) >> {
     + upsert_profile(profile, data): NutritionalProfile
     + calculate_bmr(weight, height, age, sex): Decimal
@@ -51,41 +49,51 @@ package "Services" {
     + log_meal(user, data): (Meal, warnings)
   }
 
+  class UserService << (S,lightgreen) >> {
+    + create_account(data): User
+    + authenticate_account(login, password): User
+  }
+
   class MealSuggesterService << (S,lightgreen) >> {
-    + suggest_meals(context): Suggestion
+    + suggest_meal(user, prompt): MealSuggestion
   }
 
-  class ShoppingListService << (S,lightgreen) >> {
-    + generate_list(context): ShoppingList
+  class DietAssistantService << (S, lightgreen) >> {
+    + generate_diet_suggestion(user, message): dict
+    + edit_content_with_ai(content, instruction): str
+    + generate_shopping_list(contents): str
   }
+}
 
-  class ContextBuilderService << (S,lightgreen) >> {
-    + build_user_context(user): LLMContext
-  }
-
-  abstract class BaseSignedTokenService << (S,lightgreen) >> {
+package "Helpers" {
+  abstract class BaseSignedTokenService << (H,lightpink) >> {
     + generate(user): str
     + validate(token): (int, str)
   }
 
-  class ActivationTokenService << (S,lightgreen) >>
-  class PasswordResetTokenService << (S,lightgreen) >>
-
-  abstract class BaseEmailService << (S,lightgreen) >> {
+  abstract class BaseEmailService << (H,lightpink) >> {
     + send_email(user, token, request)
     + build_message(user, url): str
   }
 
-  class ActivationEmailService << (S,lightgreen) >>
-  class PasswordResetEmailService << (S,lightgreen) >>
+  abstract class BaseLLMClient << (H, lightpink) >> {
+    + generate_json(prompt, context): Response
+  }
+
+  class ContextBuilderService << (H,lightpink) >> {
+    + get_user_context(user): dict
+  }
+
+  class ActivationTokenService << (H,lightpink) >>
+  class PasswordResetTokenService << (S,lightpink) >>
+
+  class ActivationEmailService << (H,lightpink) >>
+  class PasswordResetEmailService << (H,lightpink) >>
+
+  class GeminiLLMClient << (H, lightpink) >>
 }
 
 package "Repositories" {
-    class UserRepository << (R, lightyellow) >> {
-        + create_user(data): User
-        + get_by_email(email): User
-        + exists_by_username(username): bool
-    }
     class NutritionalProfileRepository << (R, lightyellow) >> {
         + update_targets(profile, bmr, target)
     }
@@ -98,22 +106,19 @@ package "Repositories" {
         + create_meal(user, label): Meal
         + add_meal_item(meal, food, qty): MealItem
     }
-}
-
-package "AI Clients" {
-  abstract class BaseLLMClient {
-    + call_llm(prompt, context): Response
-  }
-  class GeminiLLMClient
+    class UserRepository << (R, lightyellow) >> {
+        + create_user(data): User
+        + get_by_email(email): User
+        + exists_by_username(username): bool
+    }
 }
 
 package "Entities" {
-
-  class User << (E,orange) >>
   class NutritionalProfile << (E,orange) >>
   class Food << (E,orange) >>
   class Meal << (E,orange) >>
   class MealItem << (E,orange) >>
+  class User << (E,orange) >>
 }
 
 ' Controllers → Services
@@ -124,21 +129,21 @@ FoodsController --> FoodService
 FoodsController --> TrackerService
 TrackerController --> TrackerService
 AIEngineController --> MealSuggesterService
-AIEngineController --> ShoppingListService
+AssistantController --> DietAssistantService
 
 ' Services → Repositories
 
-UserService --> UserRepository
-ProfileService --> NutritionalProfileRepository
-FoodService --> FoodRepository
-TrackerService --> TrackerRepository
-MealSuggesterService --> ContextBuilderService
-ShoppingListService --> ContextBuilderService
+UserService ----> UserRepository
+ProfileService ----> NutritionalProfileRepository
+FoodService ----> FoodRepository
+TrackerService ----> TrackerRepository
 
-' Services → AI Clients
+' Services → Helpers
 
-MealSuggesterService --> BaseLLMClient
-ShoppingListService --> BaseLLMClient
+MealSuggesterService ----> ContextBuilderService
+' DietAssistantService ----> ContextBuilderService futuramente
+MealSuggesterService ----> BaseLLMClient
+' DietAssistantService ----> BaseLLMClient futuramente
 
 ' Repositories → Entities
 
@@ -150,22 +155,20 @@ TrackerRepository --> MealItem
 
 ' Services → Services
 
-UserService --> ActivationTokenService
-UserService --> PasswordResetTokenService
-UserService --> ActivationEmailService
-UserService --> PasswordResetEmailService
+UserService --> BaseSignedTokenService
+UserService --> BaseEmailService
 
 ' Herança
 
-ActivationTokenService --|> BaseSignedTokenService
-PasswordResetTokenService --|> BaseSignedTokenService
+ActivationTokenService -u-|> BaseSignedTokenService
+PasswordResetTokenService -u-|> BaseSignedTokenService
 
-ActivationEmailService --|> BaseEmailService
-PasswordResetEmailService --|> BaseEmailService
+ActivationEmailService -u-|> BaseEmailService
+PasswordResetEmailService -u-|> BaseEmailService
 
-GeminiLLMClient --|> BaseLLMClient
+GeminiLLMClient -u-|> BaseLLMClient
 
-note right of AccountsController
+note right of Controllers
 <u>Observações</u>
 Este diagrama é uma representação conceitual simplificada e não mantém uma
 correspondência estrita (1:1) com as classes reais do projeto.
