@@ -7,7 +7,7 @@ from .models import FoodRestriction, NutritionalProfile
 class NutritionalProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = NutritionalProfile
-        fields =  (
+        fields = (
             "weight_kg",
             "height_cm",
             "age",
@@ -21,20 +21,16 @@ class NutritionalProfileSerializer(serializers.ModelSerializer):
 
         read_only_fields = ("bmr", "daily_calorie_target", "updated_at")
 
-class FoodRestrictionSerializer(serializers.ModelSerializer):
 
+class FoodRestrictionSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodRestriction
-        fields = (
-            "restriction_type",
-            "description"
-        )
+        fields = ("id", "restriction_type", "description")
 
     def validate(self, attrs):
         restriction_type = attrs.get("restriction_type")
         description = attrs.get("description")
 
-        # Descrição obrigatória se restriction_type for 'OTHER'
         if (
             restriction_type == FoodRestriction.RestrictionTypeChoices.OTHER
             and not description
@@ -45,7 +41,6 @@ class FoodRestrictionSerializer(serializers.ModelSerializer):
                 }
             )
 
-        # Optional: Clear the description if the user selected a standard choice
         if restriction_type != FoodRestriction.RestrictionTypeChoices.OTHER:
             attrs["description"] = ""
 

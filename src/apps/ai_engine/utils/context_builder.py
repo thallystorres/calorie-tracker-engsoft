@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
 
-from apps.profiles.restrictions import extract_user_restriction_codes
+from apps.profiles.dependencies import get_profile_service
 from apps.tracker.dependencies import get_meal_repository
 
 from ..exceptions import ProfileRequiredError
@@ -80,7 +80,9 @@ class ContextBuilder:
         if not self.user:
             return self
 
-        restricoes = sorted(extract_user_restriction_codes(self.user))
+        restricoes = sorted(
+            get_profile_service().extract_user_restriction_codes(self.user)
+        )
         self.context["restricoes"] = ", ".join(restricoes) if restricoes else "Nenhuma"
         return self
 

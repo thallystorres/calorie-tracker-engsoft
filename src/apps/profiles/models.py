@@ -53,8 +53,6 @@ class FoodRestriction(models.Model):
         PEANUTS = "AMENDOIM", "Alérgico a amendoim"
         SOY = "SOJA", "Alérgico à soja"
         OATS = "AVEIA", "Alérgico à aveia"
-        VEGAN = "VEGANO", "Vegano"  # Fixed typo here
-        VEGETARIAN = "VEGETARIANO", "Vegetariano"
         OTHER = "OUTRO", "Outro"
 
     # Added related_name for easier reverse lookups

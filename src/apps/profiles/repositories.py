@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db.models.query import QuerySet
 
-from .models import NutritionalProfile, SavedDiet, SavedRecipe
+from .models import FoodRestriction, NutritionalProfile, SavedDiet, SavedRecipe
 
 
 class NutritionalProfileRepository:
@@ -41,3 +41,8 @@ class NutritionalProfileRepository:
         SavedRecipe.objects.filter(id__in=id_list, user=user).values_list(
             "content", flat=True
         )
+
+
+class FoodRestrictionRepository:
+    def search_profile(self, profile: NutritionalProfile):
+        return FoodRestriction.objects.filter(profile=profile).order_by("id")

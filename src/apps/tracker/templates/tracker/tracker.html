@@ -96,13 +96,18 @@
             class="space-y-6"
             id="tracker-form"
             data-endpoint="{% url 'tracker:meal-create' %}"
+            data-restrictions-endpoint="{% url 'profiles:restrictions-list-create' %}"
           >
             {% csrf_token %}
             <div id="tracker-feedback"></div>
 
             <datalist id="foods-list">
               {% for food in foods %}
-              <option data-id="{{ food.id }}" value="{{ food.name }} ({{ food.kcal_per_100g }} kcal/100g)"></option>
+              <option
+                data-id="{{ food.id }}"
+                data-allergens="{{ food.allergens|join:',' }}"
+                value="{{ food.name }} ({{ food.kcal_per_100g }} kcal/100g)"
+              ></option>
               {% endfor %}
             </datalist>
 
@@ -181,6 +186,13 @@
                       </button>
                     </div>
                   </div>
+
+                  <div class="sm:col-span-2">
+                    <p
+                      class="hidden text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
+                      data-allergen-warning
+                    ></p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -256,9 +268,97 @@
       const itemsContainer = document.getElementById("meal-items");
       const addItemBtn = document.getElementById("add-item-btn");
       const feedback = document.getElementById("tracker-feedback");
+      const datalistOptions = Array.from(
+        document.getElementById("foods-list").options,
+      );
+      const restrictionsEndpoint = trackerForm.dataset.restrictionsEndpoint;
+      const restrictionAllergens = new Set();
+      const restrictionMap = {
+        CELIACO: ["GLUTEN"],
+        INTOLERANTE_A_LACTOSE: ["LACTOSE", "MILK"],
+        ALERGICO_OVO: ["EGG"],
+        FRUTOS_DO_MAR: ["SEAFOOD"],
+        AMENDOIM: ["PEANUT"],
+        SOJA: ["SOY"],
+        AVEIA: ["OATS"],
+      };
       const itemRowTemplate = itemsContainer
         .querySelector(".item-row")
         .cloneNode(true);
+
+      async function loadRestrictionAllergens() {
+        if (!restrictionsEndpoint) {
+          return;
+        }
+        try {
+          const response = await fetch(restrictionsEndpoint, {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+          });
+          if (!response.ok) {
+            return;
+          }
+          const data = await response.json();
+          if (!Array.isArray(data)) {
+            return;
+          }
+          restrictionAllergens.clear();
+          data.forEach((item) => {
+            const code = item.restriction_type;
+            const allergens = restrictionMap[code] || [];
+            allergens.forEach((token) => restrictionAllergens.add(token));
+          });
+          updateAllRowWarnings();
+        } catch (error) {
+          // Silently ignore for now.
+        }
+      }
+
+      function getFoodAllergensFromOption(option) {
+        if (!option) {
+          return [];
+        }
+        const raw = option.dataset.allergens || "";
+        if (!raw) {
+          return [];
+        }
+        return raw.split(",").map((token) => token.trim()).filter(Boolean);
+      }
+
+      function updateRowWarning(row) {
+        if (!row) {
+          return;
+        }
+        const warningEl = row.querySelector("[data-allergen-warning]");
+        if (!warningEl) {
+          return;
+        }
+        if (!restrictionAllergens.size) {
+          warningEl.classList.add("hidden");
+          warningEl.textContent = "";
+          return;
+        }
+
+        const inputValue = row.querySelector('input[name="food_search"]').value;
+        const option = datalistOptions.find((opt) => opt.value === inputValue);
+        const foodAllergens = getFoodAllergensFromOption(option);
+        const conflicts = foodAllergens.filter((token) =>
+          restrictionAllergens.has(token),
+        );
+
+        if (conflicts.length) {
+          warningEl.textContent =
+            "Atenção: este alimento conflita com suas restrições.";
+          warningEl.classList.remove("hidden");
+        } else {
+          warningEl.classList.add("hidden");
+          warningEl.textContent = "";
+        }
+      }
+
+      function updateAllRowWarnings() {
+        const rows = itemsContainer.querySelectorAll(".item-row");
+        rows.forEach((row) => updateRowWarning(row));
+      }
 
       function buildItemRow(showRemoveButton = true) {
         const clone = itemRowTemplate.cloneNode(true);
@@ -291,6 +391,7 @@
       addItemBtn.addEventListener("click", () => {
         itemsContainer.appendChild(buildItemRow(true));
         toggleRemoveButtons();
+        updateAllRowWarnings();
       });
 
       itemsContainer.addEventListener("click", (evt) => {
@@ -308,7 +409,16 @@
         toggleRemoveButtons();
       });
 
+      itemsContainer.addEventListener("input", (evt) => {
+        const target = evt.target;
+        if (target && target.name === "food_search") {
+          const row = target.closest(".item-row");
+          updateRowWarning(row);
+        }
+      });
+
       toggleRemoveButtons();
+      loadRestrictionAllergens();
 
       trackerForm.addEventListener("submit", async (evt) => {
         evt.preventDefault();
@@ -322,7 +432,6 @@
 
         const label = trackerForm.querySelector('select[name="label"]').value;
         const rows = itemsContainer.querySelectorAll(".item-row");
-        const datalistOptions = Array.from(document.getElementById('foods-list').options);
 
         const items = Array.from(rows).map((row) => {
           const inputValue = row.querySelector('input[name="food_search"]').value;

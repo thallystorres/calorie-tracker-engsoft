@@ -43,11 +43,20 @@
       {% endif %}
 
       {% if profile %}
-      <form hx-patch="{% url 'profiles:profile' %}" class="space-y-6">
+      <form
+        hx-patch="{% url 'profiles:profile' %}"
+        class="space-y-6"
+        data-profile-form="true"
+      >
       {% else %}
-      <form hx-post="{% url 'profiles:profile' %}" class="space-y-6">
+      <form
+        hx-post="{% url 'profiles:profile' %}"
+        class="space-y-6"
+        data-profile-form="true"
+      >
       {% endif %}
         <div data-feedback="api-feedback"></div>
+        <input type="hidden" name="restrictions" id="profile-restrictions" />
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div class="space-y-1.5">
@@ -58,7 +67,8 @@
               type="number"
               step="0.01"
               name="weight_kg"
-              value="{{ profile.weight_kg|default:'' }}"
+              {% load l10n %}
+              value="{{ profile.weight_kg|default:''|unlocalize }}"
               class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
               required
             />
@@ -184,6 +194,278 @@
         </button>
       </form>
     </div>
+
+    <div
+      id="restrictions-root"
+      class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mt-8"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">Restrições alimentares</h2>
+          <p class="text-sm text-slate-500">
+            Informe alergias e intolerâncias para alertas no registro de refeições.
+          </p>
+        </div>
+      </div>
+
+      {% if profile %}
+      <form
+        id="restriction-form"
+        hx-post="{% url 'profiles:restrictions-list-create' %}"
+        hx-swap="none"
+        data-restrictions-endpoint="{% url 'profiles:restrictions-list-create' %}"
+        class="space-y-4"
+      >
+        <div data-feedback="api-feedback"></div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Tipo de restrição</label
+            >
+            <select
+              name="restriction_type"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            >
+              {% for value, label in restriction_types %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="restriction_type"
+            ></p>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Descrição (quando aplicável)</label
+            >
+            <input
+              type="text"
+              name="description"
+              placeholder="Ex: alergia a castanha"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="description"
+            ></p>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
+        >
+          Adicionar restrição
+        </button>
+      </form>
+
+      <div class="mt-6">
+        <div
+          id="restriction-loading"
+          class="hidden text-sm text-slate-500"
+        >
+          Carregando restrições...
+        </div>
+        <div
+          id="restriction-empty"
+          class="hidden text-sm text-slate-500"
+        >
+          Nenhuma restrição cadastrada.
+        </div>
+        <div
+          id="restriction-list"
+          class="space-y-3"
+          data-restrictions-endpoint="{% url 'profiles:restrictions-list-create' %}"
+        ></div>
+      </div>
+      {% else %}
+      <div
+        class="p-4 bg-amber-50 rounded-xl border border-amber-100 text-amber-800 text-sm"
+      >
+        Crie seu perfil nutricional para adicionar restrições alimentares.
+      </div>
+      {% endif %}
+    </div>
   </div>
 </div>
+
+<script>
+  const restrictionsRoot = document.getElementById("restrictions-root");
+
+  if (restrictionsRoot) {
+    const restrictionsForm = document.getElementById("restriction-form");
+    const profileForm = document.querySelector('[data-profile-form="true"]');
+    const restrictionsField = document.getElementById("profile-restrictions");
+    const listEl = document.getElementById("restriction-list");
+    const loadingEl = document.getElementById("restriction-loading");
+    const emptyEl = document.getElementById("restriction-empty");
+    const typeSelect = restrictionsForm
+      ? restrictionsForm.querySelector('select[name="restriction_type"]')
+      : null;
+    const descriptionInput = restrictionsForm
+      ? restrictionsForm.querySelector('input[name="description"]')
+      : null;
+    const restrictionLabels = {};
+    let currentRestrictions = [];
+
+    if (typeSelect) {
+      Array.from(typeSelect.options).forEach((option) => {
+        restrictionLabels[option.value] = option.textContent.trim();
+      });
+    }
+
+    function toggleDescription() {
+      if (!typeSelect || !descriptionInput) {
+        return;
+      }
+      const isOther = typeSelect.value === "OUTRO";
+      descriptionInput.required = isOther;
+      descriptionInput.disabled = !isOther;
+      descriptionInput.classList.toggle("opacity-60", !isOther);
+      descriptionInput.classList.toggle("cursor-not-allowed", !isOther);
+      if (!isOther) {
+        descriptionInput.value = "";
+      }
+    }
+
+    if (typeSelect && descriptionInput) {
+      typeSelect.addEventListener("change", toggleDescription);
+      toggleDescription();
+    }
+
+    async function loadRestrictions() {
+      if (!listEl || !listEl.dataset.restrictionsEndpoint) {
+        return;
+      }
+
+      if (loadingEl) {
+        loadingEl.classList.remove("hidden");
+      }
+      if (emptyEl) {
+        emptyEl.classList.add("hidden");
+      }
+
+      try {
+        const response = await fetch(listEl.dataset.restrictionsEndpoint, {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Falha ao buscar restricoes");
+        }
+
+        const data = await response.json();
+        const items = Array.isArray(data) ? data : [];
+        currentRestrictions = items.map((item) => ({
+          restriction_type: item.restriction_type,
+          description: item.description || "",
+        }));
+        renderRestrictions(items);
+      } catch (error) {
+        currentRestrictions = [];
+        renderRestrictions([]);
+      } finally {
+        if (loadingEl) {
+          loadingEl.classList.add("hidden");
+        }
+      }
+    }
+
+    function renderRestrictions(items) {
+      if (!listEl) {
+        return;
+      }
+
+      listEl.innerHTML = "";
+
+      if (!items.length) {
+        if (emptyEl) {
+          emptyEl.classList.remove("hidden");
+        }
+        return;
+      }
+
+      if (emptyEl) {
+        emptyEl.classList.add("hidden");
+      }
+
+      items.forEach((item) => {
+        const wrapper = document.createElement("div");
+        wrapper.className =
+          "p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3";
+
+        const textWrapper = document.createElement("div");
+
+        const title = document.createElement("p");
+        title.className = "font-semibold text-slate-800";
+        title.textContent =
+          restrictionLabels[item.restriction_type] ||
+          item.restriction_type ||
+          "Restricao";
+
+        textWrapper.appendChild(title);
+
+        if (item.description) {
+          const desc = document.createElement("p");
+          desc.className = "text-sm text-slate-500";
+          desc.textContent = item.description;
+          textWrapper.appendChild(desc);
+        }
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className =
+          "px-4 py-2 rounded-lg text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200";
+        deleteButton.textContent = "Remover";
+        deleteButton.setAttribute("data-restrictions-action", "delete");
+        deleteButton.setAttribute(
+          "hx-delete",
+          `${listEl.dataset.restrictionsEndpoint}${item.id}/`,
+        );
+        deleteButton.setAttribute("hx-swap", "none");
+
+        wrapper.appendChild(textWrapper);
+        wrapper.appendChild(deleteButton);
+        listEl.appendChild(wrapper);
+      });
+
+      if (window.htmx) {
+        window.htmx.process(listEl);
+      }
+    }
+
+    document.body.addEventListener("htmx:afterRequest", function (evt) {
+      const trigger = evt.detail.elt;
+      if (!trigger) {
+        return;
+      }
+
+      if (
+        trigger.closest("#restriction-form") ||
+        trigger.dataset.restrictionsAction === "delete"
+      ) {
+        loadRestrictions();
+      }
+    });
+
+    document.body.addEventListener("htmx:configRequest", function (evt) {
+      if (!profileForm || evt.target !== profileForm) {
+        return;
+      }
+      if (restrictionsField) {
+        restrictionsField.value = JSON.stringify(currentRestrictions || []);
+      }
+    });
+
+    if (listEl && listEl.dataset.restrictionsEndpoint) {
+      loadRestrictions();
+    }
+  }
+</script>
 {% endblock %}
