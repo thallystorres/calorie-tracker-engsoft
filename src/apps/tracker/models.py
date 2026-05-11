@@ -6,8 +6,6 @@ from django.db import models
 
 from apps.foods.models import Food
 
-# Create your models here.
-
 
 class Meal(models.Model):
     class MealLabel(models.TextChoices):

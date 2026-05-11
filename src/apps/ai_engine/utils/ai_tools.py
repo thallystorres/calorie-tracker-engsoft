@@ -5,7 +5,7 @@ from apps.profiles.dependencies import get_profile_repository
 
 
 def search_food(query: str, limite: int = 5) -> str:
-    """Busca alimentos no banco de dados."""
+    """Buscas {limite} alimentos no Banco de Dados. Não inclui refeições completas, somente alimentos vendidos em supermercados no Brasil (OpenFoodFacts). Funciona melhor com busca por termos chave."""
     repo = get_food_repository()
     alimentos = repo.list_foods(query=query)[:limite]
 

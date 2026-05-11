@@ -3,7 +3,7 @@ Sua tarefa é sugerir UMA (1) refeição equilibrada com base no contexto do usu
 
 CONTEXTO DO USUÁRIO:
 - Calorias restantes para hoje: {calorias_restantes} kcal
-- Macronutrientes já consumidos: Carboidratos: {macros_consumidos[carb]}g, Proteínas: {macros_consumidos[protein]}g, Gorduras: {macros_consumidos[fat]}g
+- Macronutrientes já consumidos: Carboidratos: {macros_consumidos[carbs]}g, Proteínas: {macros_consumidos[protein]}g, Gorduras: {macros_consumidos[fat]}g, Fibras: {macros_consumidos[fiber]}g
 - Restrições alimentares absolutas: {restricoes}
 - Ingredientes frequentemente consumidos nos últimos 7 dias: {historico_refeicoes}
 

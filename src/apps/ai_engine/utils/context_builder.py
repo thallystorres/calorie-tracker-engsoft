@@ -26,8 +26,11 @@ class ContextBuilder:
                 "Preencha seu perfil nutricional antes de pedir sugestões."
             )
 
-        hoje = timezone.now().replace(hour=0, minute=0, second=0)
+        hoje = timezone.localdate()
+
+        totals = repo.get_daily_totals(self.user, hoje)
         itens_hoje = repo.get_meal_items_for_user_from_date(self.user, hoje)
+
         calorias_consumidas = (
             itens_hoje.aggregate(total=Sum("kcal_total"))["total"] or 0
         )
@@ -37,12 +40,14 @@ class ContextBuilder:
 
         self.context["calorias_restantes"] = max(0, calorias_restantes)
         self.context["objetivo"] = profile.get_goal_display()
-        # TODO: Rastrear o Consumo de macros
         self.context["macros_consumidos"] = {
-            "carb": 150,
-            "protein": 80,
-            "fat": 40,
-        }  # Mock temporário (pelo amor de deus alguem lembra de implementar isso depois)
+            "carbs": float(totals.get("carbs") or 0),
+            "protein": float(totals.get("protein") or 0),
+            "fat": float(totals.get("fat") or 0),
+            "fiber": float(totals.get("fiber") or 0),
+        }
+
+        print(totals)
         return self
 
     def add_history(self):
