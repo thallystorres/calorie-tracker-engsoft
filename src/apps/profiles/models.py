@@ -37,6 +37,7 @@ class NutritionalProfile(models.Model):
     daily_calorie_target = models.DecimalField(
         max_digits=7, decimal_places=2, null=True, blank=True
     )
+    remind_interval_hours = models.PositiveSmallIntegerField(default=3)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

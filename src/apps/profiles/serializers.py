@@ -17,6 +17,7 @@ class NutritionalProfileSerializer(serializers.ModelSerializer):
             "bmr",
             "daily_calorie_target",
             "updated_at",
+            "remind_interval_hours",
         )
 
         read_only_fields = ("bmr", "daily_calorie_target", "updated_at")

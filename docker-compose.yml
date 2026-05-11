@@ -45,6 +45,27 @@ services:
 
   ##############################################################################
 
+  celery-beat:
+    build:
+      context: .
+      target: dev
+    environment:
+      - PYTHONPATH=/app/src
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+    command: ["celery", "-A", "core.celery:app", "beat", "--loglevel=info"]
+
+  ##############################################################################
+
   db:
     image: postgres:18
     volumes:

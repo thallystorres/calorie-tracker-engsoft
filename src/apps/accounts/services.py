@@ -14,7 +14,7 @@ from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from .repositories import UserRepository
 
 logging.basicConfig(
-    filename="kraken_sitac.log",
+    filename="calorai.log",
     format="%(asctime)s - %(message)s",
     datefmt="%d/%m/%Y %I:%M:%S %p",
     encoding="utf-8",
@@ -139,6 +139,43 @@ class PasswordResetEmailService(BaseEmailService):
             "Acesse o link abaixo para continuar\n\n"
             f"{url}\n\n"
             "Se você não solicitou esse cadastro ignore esse e-mail."
+        )
+
+
+class SimpleEmailService(BaseEmailService):
+    route_name = ""
+    missing_request_msg = ""
+    subject = ""
+
+    def build_url(self, *, token: str, request=None) -> str:
+        return ""
+
+    def send_email(self, *, user: User, token: str = "", request=None) -> None:
+        message = self.build_message(user=user, url="")
+        self._send_text_email(recipient=user.email, message=message)
+
+
+class ReminderEmailService(SimpleEmailService):
+    subject = "Lembrete de registro de refeicao"
+
+    def build_message(self, *, user: User, url: str) -> str:
+        return (
+            f"Olá, {user.first_name or user.username}!\n\n"
+            "Notamos que voce esta sem registrar refeicoes nas ultimas horas.\n"
+            "Acesse o sistema e registre sua refeicao.\n\n"
+            "Se voce ja registrou recentemente, por favor desconsidere."
+        )
+
+
+class ExcessEmailService(SimpleEmailService):
+    subject = "Alerta de excesso de calorias"
+
+    def build_message(self, *, user: User, url: str) -> str:
+        return (
+            f"Olá, {user.first_name or user.username}!\n\n"
+            "Seu consumo de calorias hoje atingiu ou ultrapassou sua meta diaria.\n"
+            "Acesse o sistema para revisar seus registros.\n\n"
+            "Continue firme no seu objetivo!"
         )
 
 

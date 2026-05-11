@@ -167,3 +167,14 @@ PASSWORD_RESET_MAX_AGE_SECONDS = int(
     os.getenv("PASSWORD_RESET_MAX_AGE_SECONDS", "3600")
 )  # 1h
 PASSWORD_RESET_SALT = os.getenv("PASSWORD_RESET_SALT", "accounts.password-reset.v1")
+
+CELERY_BEAT_SCHEDULE = {
+    "reminder-emails-every-30-min": {
+        "task": "apps.tracker.tasks.send_reminder_emails",
+        "schedule": 60 * 30,
+    },
+    "excess-emails-every-4-hours": {
+        "task": "apps.tracker.tasks.send_excess_emails",
+        "schedule": 60 * 60 * 4,
+    },
+}

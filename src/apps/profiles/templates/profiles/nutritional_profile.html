@@ -110,8 +110,25 @@
             ></p>
           </div>
         </div>
-
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold text-slate-700 ml-1"
+              >Intervalo de lembrete (horas)</label
+            >
+            <input
+              type="number"
+              name="remind_interval_hours"
+              min="1"
+              max="24"
+              value="{{ profile.remind_interval_hours|default:'3' }}"
+              class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl"
+              required
+            />
+            <p
+              class="hidden mt-1 text-xs font-medium text-red-600"
+              data-error-for="remind_interval_hours"
+            ></p>
+          </div>
           <div class="space-y-1.5">
             <label class="text-sm font-semibold text-slate-700 ml-1"
               >Sexo biológico</label
@@ -161,7 +178,7 @@
               data-error-for="activity_level"
             ></p>
           </div>
-          <div class="space-y-1.5">
+          <div class="space-y-1.5 sm:col-span-3">
             <label class="text-sm font-semibold text-slate-700 ml-1"
               >Objetivo</label
             >
