@@ -6,6 +6,21 @@
     </div>
 
     <div
+      id="dashboard-panel"
+      class="mb-8"
+      hx-get="{% url 'tracker-ui:dashboard' %}"
+      hx-trigger="load, mealsUpdated from:body"
+      hx-target="this"
+      hx-swap="innerHTML"
+    >
+      <div
+        class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center"
+      >
+        <p class="text-slate-500 text-sm">Carregando dashboard...</p>
+      </div>
+    </div>
+
+    <div
       class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mb-8"
     >
       <h2 class="text-xl font-bold text-slate-800 mb-6">
@@ -209,56 +224,79 @@
         <div
           class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mt-8"
         >
-          <h2 class="text-xl font-bold text-slate-800 mb-6">Seu histórico</h2>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-800">Seu histórico</h2>
+            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+              Filtros
+            </span>
+          </div>
 
-          {% if meals %}
-          <div class="space-y-4">
-            {% for meal in meals %}
+          <form
+            id="history-filters"
+            class="flex flex-wrap gap-3 items-end mb-6"
+            hx-get="{% url 'tracker-ui:history' %}"
+            hx-trigger="load, change, submit, mealsUpdated from:body"
+            hx-target="#history-results"
+            hx-swap="innerHTML"
+          >
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-slate-600" for="history-period">
+                Período
+              </label>
+              <select
+                id="history-period"
+                name="period"
+                class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-600"
+              >
+                <option value="7" selected>Últimos 7 dias</option>
+                <option value="30">Últimos 30 dias</option>
+                <option value="custom">Intervalo personalizado</option>
+              </select>
+            </div>
+
             <div
-              class="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-emerald-300 transition-colors"
+              id="history-custom-range"
+              class="hidden flex flex-wrap gap-3"
             >
-              <div class="flex items-center justify-between mb-3">
-                <div>
-                  <p class="font-bold text-slate-800">
-                    {{ meal.get_label_display }}
-                  </p>
-                  <p class="text-xs text-slate-500">
-                    {{ meal.eaten_at|date:"d/m/Y \\à\\s H:i" }}
-                  </p>
-                </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-semibold text-slate-600" for="history-start">
+                  Início
+                </label>
+                <input
+                  type="date"
+                  id="history-start"
+                  name="start_date"
+                  class="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600"
+                />
               </div>
-
-              <div class="space-y-2">
-                {% for item in meal.items.all %}
-                <div
-                  class="flex justify-between items-center p-3 rounded-lg bg-white border border-slate-200"
-                >
-                  <div>
-                    <p class="font-semibold text-slate-700">
-                      {{ item.food.name }}
-                    </p>
-                    <p class="text-xs text-slate-500">
-                      {{ item.quantity_grams }} g
-                    </p>
-                  </div>
-                  <p class="font-bold text-emerald-600">
-                    {{ item.kcal_total }} kcal
-                  </p>
-                </div>
-                {% endfor %}
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-semibold text-slate-600" for="history-end">
+                  Fim
+                </label>
+                <input
+                  type="date"
+                  id="history-end"
+                  name="end_date"
+                  class="px-3 py-2 rounded-lg border border-slate-200 text-sm  text-slate-600"
+                />
               </div>
             </div>
-            {% endfor %}
+
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+            >
+              Aplicar
+            </button>
+          </form>
+
+          <div id="history-results">
+            <div
+              class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center"
+            >
+              <p class="text-slate-500 text-sm">Carregando histórico...</p>
+            </div>
           </div>
-          {% else %}
-          <div
-            class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center"
-          >
-            <p class="text-slate-500 text-sm">
-              Você ainda não registrou nenhuma refeição.
-            </p>
-          </div>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -494,9 +532,9 @@
             itemsContainer.appendChild(buildItemRow(false));
             toggleRemoveButtons();
 
-            setTimeout(() => {
-              window.location.reload();
-            }, 1200);
+            if (window.htmx) {
+              window.htmx.trigger(document.body, "mealsUpdated");
+            }
             return;
           }
 
@@ -515,6 +553,25 @@
           }
         }
       });
+
+      const historyPeriod = document.getElementById("history-period");
+      const historyCustomRange = document.getElementById("history-custom-range");
+
+      function toggleHistoryCustomRange() {
+        if (!historyPeriod || !historyCustomRange) {
+          return;
+        }
+        if (historyPeriod.value === "custom") {
+          historyCustomRange.classList.remove("hidden");
+        } else {
+          historyCustomRange.classList.add("hidden");
+        }
+      }
+
+      if (historyPeriod) {
+        historyPeriod.addEventListener("change", toggleHistoryCustomRange);
+      }
+      toggleHistoryCustomRange();
     </script>
 
     <script>
