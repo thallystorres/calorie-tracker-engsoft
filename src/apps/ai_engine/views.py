@@ -1,6 +1,8 @@
 import re
 from typing import cast
 
+from apps.profiles.dependencies import get_profile_repository
+from apps.profiles.models import SavedDiet, SavedRecipe, WeeklyPlan
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,15 +13,34 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.profiles.dependencies import get_profile_repository
-from apps.profiles.models import SavedDiet, SavedRecipe
-
 from .dependencies import (
     get_diet_assistant_service,
     get_meal_suggester_service,
     get_shopping_list_service,
+    get_weekly_planner_service,
 )
 from .exceptions import AIEngineError
+
+
+class WeeklyPlannerChatAPIView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request: Request) -> Response:
+        user_message = str(request.data.get("message", "")).strip()
+        user = cast("User", request.user)
+        service = get_weekly_planner_service()
+
+        try:
+            ai_reply_data = service.generate_weekly_plan(
+                user=user, user_message=user_message
+            )
+            return Response(ai_reply_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Erro na IA: {e!s}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class SuggestMealView(APIView):
@@ -122,6 +143,8 @@ class SaveAIContentAPIView(APIView):
                 titulo_dinamico = f"Plano Alimentar de {nome_usuario} - {data_atual}"
             elif tipo == "receita":
                 titulo_dinamico = f"Receita de {nome_usuario} - {data_atual}"
+            elif tipo == "plano_semanal":
+                titulo_dinamico = f"Plano Semanal de {nome_usuario} - {data_atual}"
             else:
                 titulo_dinamico = f"Conteúdo Salvo - {data_atual}"
 
@@ -132,6 +155,11 @@ class SaveAIContentAPIView(APIView):
                 profile_repo.create_diet(user, titulo_dinamico, conteudo_str)
             elif tipo == "receita":
                 profile_repo.create_recipe(user, titulo_dinamico, conteudo_str)
+            elif tipo == "plano_semanal":
+                import json
+
+                plan_data = json.loads(conteudo_str)
+                profile_repo.create_weekly_plan(user, titulo_dinamico, plan_data)
             else:
                 return Response(
                     {"error": "Tipo inválido."}, status=status.HTTP_400_BAD_REQUEST
@@ -153,8 +181,13 @@ def saved_items_page(request):
     # Pega as dietas e receitas do usuário logado, ordenando da mais recente para a mais antiga
     dietas = repo.list_diets(request.user)
     receitas = repo.list_recipes(request.user)
+    planos_semanais = repo.list_weekly_plans(request.user)
 
-    context = {"dietas": dietas, "receitas": receitas}
+    context = {
+        "dietas": dietas,
+        "receitas": receitas,
+        "planos_semanais": planos_semanais,
+    }
     return render(request, "ai_engine/saved_items.html", context)
 
 
@@ -170,6 +203,9 @@ def delete_saved_item(request):
         item.delete()
     elif item_type == "receita":
         item = get_object_or_404(SavedRecipe, id=item_id, user=request.user)
+        item.delete()
+    elif item_type == "plano_semanal":
+        item = get_object_or_404(WeeklyPlan, id=item_id, user=request.user)
         item.delete()
 
     # Após apagar do banco de dados, o Django recarrega a página de salvos

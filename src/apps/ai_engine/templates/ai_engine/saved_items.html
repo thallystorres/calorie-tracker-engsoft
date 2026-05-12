@@ -26,6 +26,68 @@
   </div>
 
   <h2
+    class="text-xl font-bold text-blue-600 border-b border-blue-100 pb-2 mb-6"
+  >
+    Planos Semanais
+  </h2>
+
+  {% if not planos_semanais %}
+  <p class="text-slate-400 italic mb-10">
+    Ainda não guardou nenhum plano semanal.
+  </p>
+  {% else %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+    {% for plano in planos_semanais %}
+    <div
+      class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col h-full"
+    >
+      <div class="flex justify-between items-start mb-2">
+        <h3 class="font-bold text-lg text-slate-800">{{ plano.title }}</h3>
+        {% if plano.is_active %}
+        <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Ativo</span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-slate-400 mb-4">
+        Meta: {{ plano.target_kcal_per_day }} kcal/dia
+      </p>
+
+      <div class="flex-grow space-y-2 overflow-y-auto max-h-60 pr-2">
+        {% for day in plano.plan_data.days|slice:":3" %}
+          <div class="text-xs p-2 bg-slate-50 rounded-lg border border-slate-100">
+            <span class="font-bold text-slate-700">Dia {{ day.day_number }}:</span>
+            <span class="text-slate-500">{{ day.daily_total_kcal }} kcal</span>
+          </div>
+        {% endfor %}
+        {% if plano.plan_data.days|length > 3 %}
+          <p class="text-[10px] text-slate-400 italic text-center">+ {{ plano.plan_data.days|length|add:"-3" }} dias no plano completo</p>
+        {% endif %}
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-slate-100 flex justify-end gap-3">
+          <form
+            action="{% url 'ai:api-delete-item' %}"
+            method="POST"
+            onsubmit="
+              return confirm('Tem a certeza que deseja excluir este plano?');
+            "
+          >
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ plano.id }}" />
+            <input type="hidden" name="type" value="plano_semanal" />
+            <button
+              type="submit"
+              class="text-xs font-semibold text-red-500 hover:text-red-700"
+            >
+              Excluir
+            </button>
+          </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h2
     class="text-xl font-bold text-emerald-700 border-b border-emerald-100 pb-2 mb-6"
   >
     Dietas Guardadas

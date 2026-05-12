@@ -3,11 +3,40 @@ from pathlib import Path
 from django.contrib.auth.models import User
 
 from .clients.base import BaseLLMClient
-from .schemas import DietResponseSchema, MealSuggestionSchema
+from .schemas import (
+    AIPlannerResponseSchema,
+    DietResponseSchema,
+    MealSuggestionSchema,
+)
 from .utils.ai_tools import adjust_future_targets, search_food
 from .utils.context_builder import ContextBuilder
 
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+
+
+class WeeklyPlannerService:
+    def __init__(self, llm_client: BaseLLMClient):
+        self.llm_client = llm_client
+
+    def generate_weekly_plan(self, user: User, user_message: str) -> dict:
+        context = ContextBuilder(user).add_profile_data().add_restrictions().build()
+
+        with (PROMPTS_DIR / "weekly_planner.txt").open(encoding="utf-8") as f:
+            system_prompt = f.read().format(**context)
+
+        try:
+            return self.llm_client.generate_json(
+                system_prompt=system_prompt,
+                user_prompt=user_message,
+                response_schema=AIPlannerResponseSchema,
+                tools=[search_food],
+            )
+        except Exception as e:
+            return {
+                "state": "asking",
+                "message": f"Desculpe, tive um problema ao gerar o plano: {e!s}",
+                "weekly_plan": None,
+            }
 
 
 class DietAssistantService:
@@ -18,6 +47,7 @@ class DietAssistantService:
         context = (
             ContextBuilder(user)
             .add_profile_data()
+            .add_daily_progress()
             .add_history()
             .add_restrictions()
             .build()
@@ -61,6 +91,7 @@ class MealSuggesterService:
         context = (
             ContextBuilder(user)
             .add_profile_data()
+            .add_daily_progress()
             .add_history()
             .add_restrictions()
             .build()
