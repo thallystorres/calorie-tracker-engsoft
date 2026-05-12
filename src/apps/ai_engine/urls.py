@@ -8,6 +8,11 @@ urlpatterns = [
     path("suggest_meal/", views.SuggestMealView.as_view(), name="suggest_meal"),
     path("api/chat/", views.DietAssistantChatAPIView.as_view(), name="api-chat"),
     path(
+        "api/weekly-planner/",
+        views.WeeklyPlannerChatAPIView.as_view(),
+        name="api-weekly-planner",
+    ),
+    path(
         "api/save-content/",
         views.SaveAIContentAPIView.as_view(),
         name="api-save-content",

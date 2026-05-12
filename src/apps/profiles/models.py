@@ -56,14 +56,12 @@ class FoodRestriction(models.Model):
         OATS = "AVEIA", "Alérgico à aveia"
         OTHER = "OUTRO", "Outro"
 
-    # Added related_name for easier reverse lookups
     profile = models.ForeignKey(
         NutritionalProfile, on_delete=models.CASCADE, related_name="restriction_items"
     )
     restriction_type = models.CharField(
         max_length=30, choices=RestrictionTypeChoices.choices
     )
-    # Bumped to 255 just to be safe, but 100 works too
     description = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
@@ -92,3 +90,23 @@ class SavedRecipe(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"
+
+
+class WeeklyPlan(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="weekly_plans"
+    )
+    title = models.CharField(max_length=255, default="Meu Plano Semanal")
+
+    is_active = models.BooleanField(
+        default=False, help_text="É o plano que o usuário está seguindo agora?"
+    )
+    start_date = models.DateField(null=True, blank=True)
+    target_kcal_per_day = models.DecimalField(max_digits=7, decimal_places=2, null=True)
+
+    plan_data = models.JSONField(
+        help_text="JSON estruturado contendo os dias, refeições e ingredientes"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

@@ -2,6 +2,21 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <div class="min-h-[85vh] py-8 px-4 sm:px-6 lg:px-8 flex flex-col">
+  <!-- Modal para Plano Detalhado -->
+  <div id="plan-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-emerald-600 text-white">
+        <h2 class="text-xl font-bold" id="modal-title">Detalhes do Plano</h2>
+        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="p-8 overflow-y-auto bg-slate-50 flex-grow" id="modal-content">
+        <!-- Conteúdo preenchido via JS -->
+      </div>
+    </div>
+  </div>
+
   <div
     class="max-w-4xl mx-auto w-full flex-grow flex flex-col bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden"
   >
@@ -15,22 +30,26 @@
       </div>
       <div>
         <h1 class="text-lg font-bold text-white">Assistente CalorAI</h1>
-        <p class="text-emerald-100 text-xs">A analisar o seu perfil...</p>
+        <p id="chat-mode-label" class="text-emerald-100 text-xs">Modo: Assistente Geral</p>
       </div>
 
-      <div class="ml-auto">
+      <div class="ml-auto flex gap-2">
+        <select id="chat-mode-selector" class="bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg border border-emerald-600 outline-none">
+          <option value="chat">Assistente Geral</option>
+          <option value="weekly">Planejador Semanal</option>
+        </select>
         <a
           href="{% url 'ai-ui:saved-items' %}"
           class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold py-2 px-4 rounded-lg transition shadow-sm border border-emerald-600"
         >
-          📂 Meus Planos e Receitas
+          📂 Meus Planos
         </a>
       </div>
     </div>
     <div
       id="chat-history"
       class="flex-grow p-6 overflow-y-auto space-y-6 bg-slate-50 flex flex-col"
-      style="max-height: 60vh"
+      style="max-height: 70vh"
     >
       <div class="flex justify-start">
         <div
@@ -110,6 +129,118 @@
     }
   }
 
+  document.getElementById("chat-mode-selector").addEventListener("change", function(e) {
+    const label = document.getElementById("chat-mode-label");
+    if (this.value === "weekly") {
+      label.innerText = "Modo: Planejador Semanal";
+      document.getElementById("user-message").placeholder = "Ex: Crie um plano de 2000kcal para ganhar massa...";
+    } else {
+      label.innerText = "Modo: Assistente Geral";
+      document.getElementById("user-message").placeholder = "Ex: Sugere-me um almoço rico em proteína...";
+    }
+  });
+
+  function closeModal() {
+    document.getElementById("plan-modal").classList.add("hidden");
+    document.body.style.overflow = "auto";
+  }
+
+  function openPlanDetails(planJsonEncoded) {
+    const plan = JSON.parse(decodeURIComponent(planJsonEncoded));
+    const modal = document.getElementById("plan-modal");
+    const content = document.getElementById("modal-content");
+    
+    document.getElementById("modal-title").innerText = `Plano Semanal: ${plan.weekly_average_kcal} kcal/dia`;
+    
+    let html = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+    
+    plan.days.forEach(day => {
+        html += `
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
+                    <span class="font-black text-emerald-600 text-lg italic">DIA ${day.day_number}</span>
+                    <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">${day.daily_total_kcal} kcal</span>
+                </div>
+                <div class="space-y-4">
+        `;
+        
+        day.meals.forEach(meal => {
+            html += `
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700">${meal.label}</span>
+                        <span class="text-[10px] font-bold text-slate-400">${meal.total_kcal} kcal</span>
+                    </div>
+                    <div class="font-bold text-slate-800 text-sm mb-1">${meal.name}</div>
+                    <ul class="text-[11px] text-slate-500 space-y-0.5 list-disc list-inside">
+                        ${meal.ingredients.map(ing => `<li>${ing.name} (${ing.quantity_grams}g)</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    html += `</div>`;
+    
+    // Lista de compras no modal
+    html += `
+        <div class="mt-8 bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
+            <h3 class="font-bold text-emerald-800 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                Dicas para a sua Lista de Compras
+            </h3>
+            <ul class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 list-disc list-inside text-sm text-emerald-700">
+                ${plan.shopping_list_tips.map(tip => `<li>${tip}</li>`).join('')}
+            </ul>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function renderWeeklyPlan(plan) {
+    if (!plan) return "";
+    const planJson = encodeURIComponent(JSON.stringify(plan));
+    
+    let html = `
+    <div class="bg-white border-2 border-emerald-100 rounded-2xl overflow-hidden shadow-sm mt-4">
+        <div class="bg-emerald-50 px-5 py-3 border-b border-emerald-100 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🗓️</span>
+                <span class="font-bold text-emerald-800 text-sm">Plano Semanal Gerado</span>
+            </div>
+            <span class="text-xs font-bold bg-emerald-200 text-emerald-700 px-2 py-1 rounded-lg">${plan.weekly_average_kcal} kcal/dia</span>
+        </div>
+        <div class="p-4 bg-slate-50/50">
+            <p class="text-xs text-slate-500 mb-4 italic text-center">Resumo dos primeiros dias:</p>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+    `;
+
+    plan.days.slice(0, 4).forEach(day => {
+        html += `
+            <div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                <div class="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-tighter">Dia ${day.day_number}</div>
+                <div class="text-xs font-bold text-slate-700 truncate">${day.meals[0].name}</div>
+                <div class="text-[10px] text-emerald-600 font-bold">${day.daily_total_kcal} kcal</div>
+            </div>
+        `;
+    });
+
+    html += `
+            </div>
+            <button onclick="openPlanDetails('${planJson}')" class="w-full py-2.5 bg-white border border-emerald-200 text-emerald-600 rounded-xl text-xs font-bold hover:bg-emerald-50 transition flex items-center justify-center gap-2">
+                🔍 Ver Plano Completo (7 dias)
+            </button>
+        </div>
+    </div>`;
+
+    return html;
+  }
+
   document
     .getElementById("ai-chat-form")
     .addEventListener("submit", async function (e) {
@@ -119,12 +250,13 @@
       const history = document.getElementById("chat-history");
       const text = input.value.trim();
       const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+      const mode = document.getElementById("chat-mode-selector").value;
 
       if (!text) return;
 
       history.insertAdjacentHTML(
         "beforeend",
-        `<div class="flex justify-end"><div class="bg-emerald-600 text-white px-5 py-4 rounded-2xl rounded-tr-sm max-w-[85%] text-sm">${text}</div></div>`,
+        `<div class="flex justify-end"><div class="bg-emerald-600 text-white px-5 py-4 rounded-2xl rounded-tr-sm max-w-[85%] text-sm shadow-sm">${text}</div></div>`,
       );
       input.value = "";
       btn.disabled = true;
@@ -133,12 +265,16 @@
       const loadId = "loading-" + Date.now();
       history.insertAdjacentHTML(
         "beforeend",
-        `<div id="${loadId}" class="flex justify-start"><div class="bg-white border border-slate-200 text-slate-500 px-5 py-4 rounded-2xl rounded-tl-sm text-sm">A processar...</div></div>`,
+        `<div id="${loadId}" class="flex justify-start"><div class="bg-white border border-slate-200 text-slate-500 px-5 py-4 rounded-2xl rounded-tl-sm text-sm shadow-sm flex items-center gap-2">
+          <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+          A processar...
+        </div></div>`,
       );
       history.scrollTop = history.scrollHeight;
 
       try {
-        const response = await fetch("{% url 'ai:api-chat' %}", {
+        const url = mode === "weekly" ? "{% url 'ai:api-weekly-planner' %}" : "{% url 'ai:api-chat' %}";
+        const response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-CSRFToken": csrf },
           body: JSON.stringify({ message: text }),
@@ -149,26 +285,41 @@
         if (loadingEl) loadingEl.remove();
 
         if (response.ok) {
+          let contentHTML = "";
           let saveBtnHTML = "";
 
-          // CORREÇÃO: Codifica o texto para ser 100% seguro contra aspas e quebras de linha no HTML
-          const safeReply = encodeURIComponent(data.reply).replace(/'/g, "%27");
+          if (mode === "weekly") {
+            contentHTML = `<p class="text-sm text-slate-700 mb-2">${data.message}</p>`;
+            
+            if (data.weekly_plan) {
+              contentHTML += renderWeeklyPlan(data.weekly_plan);
+              const planJson = encodeURIComponent(JSON.stringify(data.weekly_plan));
+              saveBtnHTML = `
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                    <button onclick="salvarConteudo('plano_semanal', decodeURIComponent('${planJson}'), this)" class="text-sm px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 shadow-sm transition">
+                        💾 Ativar este Plano
+                    </button>
+                </div>`;
+            }
+          } else {
+            contentHTML = `<div class="prose prose-emerald prose-sm max-w-none">${marked.parse(data.reply)}</div>`;
+            const safeReply = encodeURIComponent(data.reply).replace(/'/g, "%27");
 
-          // Renderiza botão apenas se não for chat normal
-          if (data.type === "dieta") {
-            saveBtnHTML = `
-                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                    <button onclick="salvarConteudo('dieta', decodeURIComponent('${safeReply}'), this)" class="text-sm px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg font-bold hover:bg-emerald-200 transition">
-                        💾 Salvar Dieta
-                    </button>
-                </div>`;
-          } else if (data.type === "receita") {
-            saveBtnHTML = `
-                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                    <button onclick="salvarConteudo('receita', decodeURIComponent('${safeReply}'), this)" class="text-sm px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition">
-                        🍳 Salvar Receita
-                    </button>
-                </div>`;
+            if (data.type === "dieta") {
+              saveBtnHTML = `
+                  <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                      <button onclick="salvarConteudo('dieta', decodeURIComponent('${safeReply}'), this)" class="text-sm px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg font-bold hover:bg-emerald-200 transition">
+                          💾 Salvar Dieta
+                      </button>
+                  </div>`;
+            } else if (data.type === "receita") {
+              saveBtnHTML = `
+                  <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                      <button onclick="salvarConteudo('receita', decodeURIComponent('${safeReply}'), this)" class="text-sm px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition">
+                          🍳 Salvar Receita
+                      </button>
+                  </div>`;
+            }
           }
 
           history.insertAdjacentHTML(
@@ -176,9 +327,7 @@
             `
                 <div class="flex justify-start">
                     <div class="bg-white border border-slate-200 text-slate-800 px-6 py-5 rounded-2xl rounded-tl-sm max-w-[95%] sm:max-w-[85%] shadow-sm">
-                        <div class="prose prose-emerald prose-sm max-w-none">
-                            ${marked.parse(data.reply)}
-                        </div>
+                        ${contentHTML}
                         ${saveBtnHTML}
                     </div>
                 </div>

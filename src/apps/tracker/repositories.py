@@ -34,6 +34,15 @@ class MealRepository:
     ) -> QuerySet[MealItem]:
         return MealItem.objects.filter(meal__user=user, meal__eaten_at__gte=start_date)
 
+    def count_days_with_meal_from_date(self, user: User, start_date) -> int:
+        meals = Meal.objects.filter(user=user, eaten_at__date__gte=start_date)
+        return (
+            meals.annotate(data_consumo=TruncDate("eaten_at"))
+            .values("data_consumo")
+            .distinct()
+            .count()
+        )
+
     @property
     def _macro_factor(self) -> ExpressionWrapper:
         return ExpressionWrapper(

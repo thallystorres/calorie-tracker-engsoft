@@ -16,7 +16,6 @@ class ContextBuilder:
         self.context = {}
 
     def add_profile_data(self):
-        repo = get_meal_repository()
         if not self.user:
             return self
 
@@ -26,8 +25,35 @@ class ContextBuilder:
                 "Preencha seu perfil nutricional antes de pedir sugestões."
             )
 
-        hoje = timezone.now().replace(hour=0, minute=0, second=0)
+        # Dados biográficos e metas estáticas
+        perfil_bio = (
+            f"Objetivo: {profile.get_goal_display()}. "
+            f"Meta Diária: {profile.daily_calorie_target} kcal. "
+            f"Idade: {profile.age} anos. "
+            f"Peso: {profile.weight_kg} kg. "
+            f"Altura: {profile.height_cm} cm. "
+            f"Nível de Atividade: {profile.get_activity_level_display()}."
+        )
+
+        self.context["perfil_bio"] = perfil_bio
+        self.context["objetivo"] = profile.get_goal_display()
+        self.context["meta_kcal"] = float(profile.daily_calorie_target)
+
+        return self
+
+    def add_daily_progress(self):
+        repo = get_meal_repository()
+        if not self.user:
+            return self
+
+        profile = getattr(self.user, "nutritional_profile", None)
+        if profile is None:
+            return self
+
+        hoje = timezone.localdate()
+        totals = repo.get_daily_totals(self.user, hoje)
         itens_hoje = repo.get_meal_items_for_user_from_date(self.user, hoje)
+
         calorias_consumidas = (
             itens_hoje.aggregate(total=Sum("kcal_total"))["total"] or 0
         )
@@ -35,14 +61,15 @@ class ContextBuilder:
             calorias_consumidas
         )
 
+        self.context["calorias_consumidas"] = float(calorias_consumidas)
         self.context["calorias_restantes"] = max(0, calorias_restantes)
-        self.context["objetivo"] = profile.get_goal_display()
-        # TODO: Rastrear o Consumo de macros
         self.context["macros_consumidos"] = {
-            "carb": 150,
-            "protein": 80,
-            "fat": 40,
-        }  # Mock temporário (pelo amor de deus alguem lembra de implementar isso depois)
+            "carbs": float(totals.get("carbs") or 0),
+            "protein": float(totals.get("protein") or 0),
+            "fat": float(totals.get("fat") or 0),
+            "fiber": float(totals.get("fiber") or 0),
+        }
+
         return self
 
     def add_history(self):
@@ -50,20 +77,25 @@ class ContextBuilder:
         if not self.user:
             return self
 
+        hoje = timezone.localdate()
+        sete_dias_atras = hoje - timedelta(days=7)
+
         meals_manager = getattr(self.user, "meals", None)
         first_meal = (
             meals_manager.order_by("eaten_at").first()
             if meals_manager is not None
             else None
         )
-        historico_insuficiente = (
-            not first_meal or (timezone.now() - first_meal.eaten_at).days < 7
-        )
 
-        sete_dias_atras = timezone.now() - timedelta(days=7)
         itens_historico = repo.get_meal_items_for_user_from_date(
             self.user, sete_dias_atras
         )
+
+        dias_com_refeicao = repo.count_days_with_meal_from_date(
+            self.user, sete_dias_atras
+        )
+        historico_insuficiente = dias_com_refeicao < 4
+
         alimentos_frequentes = list(
             itens_historico.values_list("food__name", flat=True).distinct()[:10]
         )

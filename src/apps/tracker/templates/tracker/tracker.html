@@ -103,133 +103,151 @@
             <div
               id="ai-adjustments"
               class="hidden mb-4 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-100 text-sm"
-            >
+            ></div>
+
+            <div class="mt-4 flex justify-end">
+              <button
+                id="ai-log-meal-btn"
+                class="px-4 py-2 rounded-lg font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all flex items-center gap-2 text-sm shadow-sm"
+              >
+                <span>🥗 Registrar Refeição</span>
+              </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <form
-            class="space-y-6"
-            id="tracker-form"
-            data-endpoint="{% url 'tracker:meal-create' %}"
-            data-restrictions-endpoint="{% url 'profiles:restrictions-list-create' %}"
+    <div
+      class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mb-8"
+    >
+      <h2 class="text-xl font-bold text-slate-800 mb-6">
+        Registro manual
+      </h2>
+
+      <form
+        class="space-y-6"
+        id="tracker-form"
+        data-endpoint="{% url 'tracker:meal-create' %}"
+        data-restrictions-endpoint="{% url 'profiles:restrictions-list-create' %}"
+      >
+        {% csrf_token %}
+        <div id="tracker-feedback"></div>
+
+        <datalist id="foods-list">
+          {% for food in foods %}
+          <option
+            data-id="{{ food.id }}"
+            data-allergens="{{ food.allergens|join:',' }}"
+            value="{{ food.name }} ({{ food.kcal_per_100g }} kcal/100g)"
+          ></option>
+          {% endfor %}
+        </datalist>
+
+        <div class="space-y-1.5">
+          <label class="text-sm font-semibold text-slate-700 ml-1"
+            >Tipo de refeição</label
           >
-            {% csrf_token %}
-            <div id="tracker-feedback"></div>
-
-            <datalist id="foods-list">
-              {% for food in foods %}
-              <option
-                data-id="{{ food.id }}"
-                data-allergens="{{ food.allergens|join:',' }}"
-                value="{{ food.name }} ({{ food.kcal_per_100g }} kcal/100g)"
-              ></option>
-              {% endfor %}
-            </datalist>
-
-            <div class="space-y-1.5">
-              <label class="text-sm font-semibold text-emerald-50 ml-1"
-                >Tipo de refeição</label
-              >
-              <select
-                name="label"
-                class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
-                required
-              >
-                <option value="" disabled selected>Selecione o tipo...</option>
-                <option value="cafe">Café da manhã</option>
-                <option value="almoco">Almoço</option>
-                <option value="jantar">Jantar</option>
-                <option value="lanche">Lanche</option>
-                <option value="outro">Outro</option>
-              </select>
-              <p
-                class="hidden mt-1 text-xs font-medium text-red-600"
-                data-error-for="label"
-              ></p>
-            </div>
-
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-emerald-50 ml-1">
-                  Itens da refeição
-                </h3>
-                <button
-                  type="button"
-                  id="add-item-btn"
-                  class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
-                >
-                  + Adicionar item
-                </button>
-              </div>
-
-              <div id="meal-items" class="space-y-4">
-                <div
-                  class="grid grid-cols-1 sm:grid-cols-2 gap-4 item-row p-4 bg-slate-50 rounded-xl border border-slate-200"
-                >
-                  <div class="space-y-1.5">
-                    <label class="text-sm font-semibold text-slate-700 ml-1"
-                      >Alimento</label
-                    >
-                    <input
-                      list="foods-list"
-                      name="food_search"
-                      placeholder="Pesquise um alimento..."
-                      class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
-                      required
-                      autocomplete="off"
-                    />
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-sm font-semibold text-slate-700 ml-1"
-                      >Quantidade (g)</label
-                    >
-                    <div class="flex gap-2">
-                      <input
-                        type="number"
-                        step="0.1"
-                        name="quantity_grams"
-                        placeholder="Ex.: 150"
-                        class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
-                        required
-                      />
-                      <button
-                        type="button"
-                        class="remove-item-btn px-3 py-2 rounded-lg text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hidden"
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="sm:col-span-2">
-                    <p
-                      class="hidden text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
-                      data-allergen-warning
-                    ></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              class="w-full sm:w-auto px-8 py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
-            >
-              Registrar consumo
-            </button>
-          </form>
+          <select
+            name="label"
+            class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+            required
+          >
+            <option value="" disabled selected>Selecione o tipo...</option>
+            <option value="cafe">Café da manhã</option>
+            <option value="almoco">Almoço</option>
+            <option value="jantar">Jantar</option>
+            <option value="lanche">Lanche</option>
+            <option value="outro">Outro</option>
+          </select>
+          <p
+            class="hidden mt-1 text-xs font-medium text-red-600"
+            data-error-for="label"
+          ></p>
         </div>
 
-        <div
-          class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mt-8"
-        >
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold text-slate-800">Seu histórico</h2>
-            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
-              Filtros
-            </span>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-700 ml-1">
+              Itens da refeição
+            </h3>
+            <button
+              type="button"
+              id="add-item-btn"
+              class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+            >
+              + Adicionar item
+            </button>
           </div>
+
+          <div id="meal-items" class="space-y-4">
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 item-row p-4 bg-slate-50 rounded-xl border border-slate-200"
+            >
+              <div class="space-y-1.5">
+                <label class="text-sm font-semibold text-slate-700 ml-1"
+                  >Alimento</label
+                >
+                <input
+                  list="foods-list"
+                  name="food_search"
+                  placeholder="Pesquise um alimento..."
+                  class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+                  required
+                  autocomplete="off"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-sm font-semibold text-slate-700 ml-1"
+                  >Quantidade (g)</label
+                >
+                <div class="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="quantity_grams"
+                    placeholder="Ex.: 150"
+                    class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="remove-item-btn px-3 py-2 rounded-lg text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hidden"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <p
+                  class="hidden text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
+                  data-allergen-warning
+                ></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full sm:w-auto px-8 py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
+        >
+          Registrar consumo
+        </button>
+      </form>
+    </div>
+
+    <div
+      class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mt-8"
+    >
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-slate-800">Seu histórico</h2>
+        <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+          Filtros
+        </span>
+      </div>
 
           <form
             id="history-filters"
@@ -298,8 +316,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
     <script>
       const trackerForm = document.getElementById("tracker-form");
@@ -609,6 +625,9 @@
           const data = await response.json();
 
           if (response.ok) {
+            // Salva os dados para uso posterior no botão de log
+            window.lastSuggestedMeal = data;
+
             // Preenche os dados no HTML
             document.getElementById("ai-meal-name").textContent =
               data.meal_name;
@@ -663,6 +682,71 @@
           // Reabilita o botão
           aiSubmitBtn.disabled = false;
           aiSubmitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        }
+      });
+
+      // Lógica para registrar a refeição sugerida pela IA
+      const logMealBtn = document.getElementById("ai-log-meal-btn");
+      logMealBtn.addEventListener("click", async () => {
+        if (!window.lastSuggestedMeal) return;
+
+        const data = window.lastSuggestedMeal;
+        const csrfToken = document.querySelector(
+          'input[name="csrfmiddlewaretoken"]',
+        ).value;
+
+        // Pega o label selecionado no formulário principal
+        const labelSelect = document.querySelector('select[name="label"]');
+        const label = labelSelect.value;
+
+        if (!label) {
+            alert("Por favor, selecione o 'Tipo de refeição' no formulário de registro manual antes de registrar a sugestão da IA.");
+            // Scroll para o campo de label para dar feedback visual
+            labelSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            labelSelect.focus();
+            return;
+        }
+
+        const payload = {
+          label: label,
+          items: data.ingredients
+            .filter(ing => ing.food_id !== null)
+            .map((ing) => ({
+                food_id: ing.food_id,
+                quantity_grams: ing.quantity_grams,
+            })),
+        };
+
+        if (payload.items.length === 0) {
+            alert("Não foi possível identificar os alimentos no banco para registro automático.");
+            return;
+        }
+
+        logMealBtn.disabled = true;
+        logMealBtn.innerHTML = "<span>⏳ Registrando...</span>";
+
+        try {
+          const response = await fetch("/api/tracker/meals/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken,
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (response.ok) {
+            alert("Refeição registrada com sucesso!");
+            location.reload(); // Recarrega para mostrar na lista e atualizar totais
+          } else {
+            const errData = await response.json();
+            alert("Erro ao registrar: " + (errData.detail || "Erro desconhecido"));
+          }
+        } catch (error) {
+          alert("Erro de conexão ao registrar refeição.");
+        } finally {
+          logMealBtn.disabled = false;
+          logMealBtn.innerHTML = "<span>🥗 Registrar Refeição</span>";
         }
       });
     </script>

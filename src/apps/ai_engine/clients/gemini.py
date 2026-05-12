@@ -79,9 +79,12 @@ class GeminiLLMClient(BaseLLMClient):
                 chat = self.client.chats.create(model=self.model_name, config=config)
                 response = chat.send_message(user_prompt)
 
-                while response.function_calls:
-                    function_responses = self.__process_function_calls(response, tools)
+                function_call_count = 0
+                max_function_calls = 10
 
+                while response.function_calls and function_call_count < max_function_calls:
+                    function_call_count += 1
+                    function_responses = self.__process_function_calls(response, tools)
                     response = chat.send_message(function_responses)
 
                 return adapter.validate_json(str(response.text))
@@ -115,10 +118,13 @@ class GeminiLLMClient(BaseLLMClient):
                 chat = self.client.chats.create(model=self.model_name, config=config)
                 response = chat.send_message(user_prompt)
 
-                while response.function_calls:
-                    print(f"response is {response.text}")
-                    function_responses = self.__process_function_calls(response, tools)
+                function_call_count = 0
+                max_function_calls = 10
 
+                while response.function_calls and function_call_count < max_function_calls:
+                    print(f"response is {response.text}")
+                    function_call_count += 1
+                    function_responses = self.__process_function_calls(response, tools)
                     response = chat.send_message(function_responses)
 
                 return str(response.text)
@@ -130,3 +136,20 @@ class GeminiLLMClient(BaseLLMClient):
                 time.sleep(0.5 * (2 ** (attempt - 1)))
 
         raise RuntimeError("Falha inesperada ao gerar resposta da IA")
+
+    def get_embedding(self, text: str, task_type: str = "search_query") -> list[float]:
+        """
+        Gera embeddings usando o modelo gemini-embedding-2.
+        Segue as recomendações de prefixo para busca assimétrica.
+        """
+        # Formata o prompt de acordo com as recomendações do Gemini Embedding 2
+        # Use 'task: search query | query: {content}' para consultas
+        formatted_prompt = f"task: {task_type} | query: {text}"
+
+        result = self.client.models.embed_content(
+            model="gemini-embedding-2",
+            contents=formatted_prompt,
+        )
+
+        # O modelo Embedding 2 retorna uma lista com um único embedding agregado
+        return result.embeddings[0].values
