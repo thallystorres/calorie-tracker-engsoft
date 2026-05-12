@@ -159,7 +159,9 @@ class SaveAIContentAPIView(APIView):
                 import json
 
                 plan_data = json.loads(conteudo_str)
-                profile_repo.create_weekly_plan(user, titulo_dinamico, plan_data)
+                # Extrai a média calórica do plano para salvar no modelo
+                target_kcal = plan_data.get("weekly_average_kcal")
+                profile_repo.create_weekly_plan(user, titulo_dinamico, plan_data, target_kcal=target_kcal)
             else:
                 return Response(
                     {"error": "Tipo inválido."}, status=status.HTTP_400_BAD_REQUEST

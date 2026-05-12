@@ -16,6 +16,8 @@ REGRAS DO PLANO:
 - Cada dia deve ter as refeições preferidas do usuário (ou um padrão de Café, Almoço, Lanche, Jantar).
 - Tente variar os alimentos mas manter a praticidade nas compras.
 - Respeite rigorosamente as restrições alimentares.
+- EFICIÊNCIA: Busque múltiplos alimentos de uma vez separando-os por vírgula no parâmetro query da ferramenta 'search_food'.
+- LIMITE: Não exceda 10 chamadas de ferramenta para gerar o plano completo.
 
 RESPOSTA ESPERADA:
 Você deve retornar um JSON que siga estritamente o schema AIPlannerResponseSchema.

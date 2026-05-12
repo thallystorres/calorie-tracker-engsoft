@@ -2,6 +2,21 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <div class="min-h-[85vh] py-8 px-4 sm:px-6 lg:px-8 flex flex-col">
+  <!-- Modal para Plano Detalhado -->
+  <div id="plan-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-emerald-600 text-white">
+        <h2 class="text-xl font-bold" id="modal-title">Detalhes do Plano</h2>
+        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="p-8 overflow-y-auto bg-slate-50 flex-grow" id="modal-content">
+        <!-- Conteúdo preenchido via JS -->
+      </div>
+    </div>
+  </div>
+
   <div
     class="max-w-4xl mx-auto w-full flex-grow flex flex-col bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden"
   >
@@ -125,46 +140,101 @@
     }
   });
 
-  function renderWeeklyPlan(plan) {
-    if (!plan) return "";
-    let html = `
-    <div class="bg-white border border-emerald-100 rounded-xl overflow-hidden shadow-sm mt-4">
-        <div class="bg-emerald-50 px-4 py-2 border-b border-emerald-100 flex justify-between items-center">
-            <span class="font-bold text-emerald-800 text-sm">🗓️ Plano Semanal Gerado</span>
-            <span class="text-xs font-medium text-emerald-600">${plan.weekly_average_kcal} kcal/dia (média)</span>
-        </div>
-        <div class="max-h-64 overflow-y-auto divide-y divide-slate-100">
-    `;
+  function closeModal() {
+    document.getElementById("plan-modal").classList.add("hidden");
+    document.body.style.overflow = "auto";
+  }
 
+  function openPlanDetails(planJsonEncoded) {
+    const plan = JSON.parse(decodeURIComponent(planJsonEncoded));
+    const modal = document.getElementById("plan-modal");
+    const content = document.getElementById("modal-content");
+    
+    document.getElementById("modal-title").innerText = `Plano Semanal: ${plan.weekly_average_kcal} kcal/dia`;
+    
+    let html = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+    
     plan.days.forEach(day => {
         html += `
-            <div class="p-3">
-                <div class="font-bold text-slate-700 text-xs mb-2 uppercase tracking-wider">Dia ${day.day_number}</div>
-                <div class="space-y-2">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
+                    <span class="font-black text-emerald-600 text-lg italic">DIA ${day.day_number}</span>
+                    <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">${day.daily_total_kcal} kcal</span>
+                </div>
+                <div class="space-y-4">
         `;
-
+        
         day.meals.forEach(meal => {
             html += `
-                <div class="text-xs flex flex-col bg-slate-50 p-2 rounded-lg border border-slate-100">
+                <div>
                     <div class="flex justify-between items-center mb-1">
-                      <span class="font-bold text-emerald-700 uppercase text-[10px]">${meal.label}</span>
-                      <span class="text-slate-400 font-medium">${meal.total_kcal} kcal</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700">${meal.label}</span>
+                        <span class="text-[10px] font-bold text-slate-400">${meal.total_kcal} kcal</span>
                     </div>
-                    <span class="font-medium text-slate-700">${meal.name}</span>
+                    <div class="font-bold text-slate-800 text-sm mb-1">${meal.name}</div>
+                    <ul class="text-[11px] text-slate-500 space-y-0.5 list-disc list-inside">
+                        ${meal.ingredients.map(ing => `<li>${ing.name} (${ing.quantity_grams}g)</li>`).join('')}
+                    </ul>
                 </div>
             `;
         });
-
+        
         html += `</div></div>`;
+    });
+    
+    html += `</div>`;
+    
+    // Lista de compras no modal
+    html += `
+        <div class="mt-8 bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
+            <h3 class="font-bold text-emerald-800 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                Dicas para a sua Lista de Compras
+            </h3>
+            <ul class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 list-disc list-inside text-sm text-emerald-700">
+                ${plan.shopping_list_tips.map(tip => `<li>${tip}</li>`).join('')}
+            </ul>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function renderWeeklyPlan(plan) {
+    if (!plan) return "";
+    const planJson = encodeURIComponent(JSON.stringify(plan));
+    
+    let html = `
+    <div class="bg-white border-2 border-emerald-100 rounded-2xl overflow-hidden shadow-sm mt-4">
+        <div class="bg-emerald-50 px-5 py-3 border-b border-emerald-100 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🗓️</span>
+                <span class="font-bold text-emerald-800 text-sm">Plano Semanal Gerado</span>
+            </div>
+            <span class="text-xs font-bold bg-emerald-200 text-emerald-700 px-2 py-1 rounded-lg">${plan.weekly_average_kcal} kcal/dia</span>
+        </div>
+        <div class="p-4 bg-slate-50/50">
+            <p class="text-xs text-slate-500 mb-4 italic text-center">Resumo dos primeiros dias:</p>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+    `;
+
+    plan.days.slice(0, 4).forEach(day => {
+        html += `
+            <div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                <div class="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-tighter">Dia ${day.day_number}</div>
+                <div class="text-xs font-bold text-slate-700 truncate">${day.meals[0].name}</div>
+                <div class="text-[10px] text-emerald-600 font-bold">${day.daily_total_kcal} kcal</div>
+            </div>
+        `;
     });
 
     html += `
-        </div>
-        <div class="bg-slate-50 p-3 border-t border-slate-100">
-            <div class="text-xs font-bold text-slate-600 mb-1">🛒 Dicas de Compras:</div>
-            <ul class="list-disc list-inside text-[10px] text-slate-500 space-y-1">
-                ${plan.shopping_list_tips.map(tip => `<li>${tip}</li>`).join('')}
-            </ul>
+            </div>
+            <button onclick="openPlanDetails('${planJson}')" class="w-full py-2.5 bg-white border border-emerald-200 text-emerald-600 rounded-xl text-xs font-bold hover:bg-emerald-50 transition flex items-center justify-center gap-2">
+                🔍 Ver Plano Completo (7 dias)
+            </button>
         </div>
     </div>`;
 

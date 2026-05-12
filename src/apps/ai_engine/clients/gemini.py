@@ -79,9 +79,12 @@ class GeminiLLMClient(BaseLLMClient):
                 chat = self.client.chats.create(model=self.model_name, config=config)
                 response = chat.send_message(user_prompt)
 
-                while response.function_calls:
-                    function_responses = self.__process_function_calls(response, tools)
+                function_call_count = 0
+                max_function_calls = 10
 
+                while response.function_calls and function_call_count < max_function_calls:
+                    function_call_count += 1
+                    function_responses = self.__process_function_calls(response, tools)
                     response = chat.send_message(function_responses)
 
                 return adapter.validate_json(str(response.text))
@@ -115,10 +118,13 @@ class GeminiLLMClient(BaseLLMClient):
                 chat = self.client.chats.create(model=self.model_name, config=config)
                 response = chat.send_message(user_prompt)
 
-                while response.function_calls:
-                    print(f"response is {response.text}")
-                    function_responses = self.__process_function_calls(response, tools)
+                function_call_count = 0
+                max_function_calls = 10
 
+                while response.function_calls and function_call_count < max_function_calls:
+                    print(f"response is {response.text}")
+                    function_call_count += 1
+                    function_responses = self.__process_function_calls(response, tools)
                     response = chat.send_message(function_responses)
 
                 return str(response.text)

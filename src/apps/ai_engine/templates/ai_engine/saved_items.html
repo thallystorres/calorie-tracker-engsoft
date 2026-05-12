@@ -1,253 +1,249 @@
 {% extends "base.html" %} {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-<div class="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-  <div class="flex justify-between items-end mb-8">
+<div class="max-w-6xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+  <!-- Modal para Detalhes do Plano Semanal -->
+  <div id="plan-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-600 text-white">
+        <h2 class="text-xl font-bold" id="modal-title">Detalhes do Plano</h2>
+        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-full transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="p-8 overflow-y-auto bg-slate-50 flex-grow" id="modal-content"></div>
+    </div>
+  </div>
+
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
     <div>
-      <h1 class="text-3xl font-bold text-slate-800">Meus Planos e Receitas</h1>
-      <p class="text-slate-500 mt-1">
-        Gira o conteúdo que guardou através do Assistente CalorAI.
+      <h1 class="text-3xl font-black text-slate-800 tracking-tight">Meus Itens Salvos</h1>
+      <p class="text-slate-500 mt-1 font-medium">
+        Gira as suas dietas, receitas e planos gerados pela IA.
       </p>
     </div>
     <div class="flex gap-3">
-      <a
-        href="{% url 'ai-ui:shopping-list' %}"
-        class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-semibold hover:bg-emerald-200 transition"
-      >
-        🛒 Lista Automática
+      <a href="{% url 'ai-ui:shopping-list' %}" class="bg-white border-2 border-slate-100 text-slate-600 px-5 py-2.5 rounded-2xl font-bold hover:bg-slate-50 transition flex items-center gap-2 shadow-sm">
+        🛒 Lista de Compras
       </a>
-      <a
-        href="{% url 'ai-ui:chat-page' %}"
-        class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition"
-      >
-        + Nova Conversa
+      <a href="{% url 'ai-ui:chat-page' %}" class="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl font-bold hover:bg-emerald-700 transition flex items-center gap-2 shadow-md shadow-emerald-100">
+        ✨ Novo Item
       </a>
     </div>
   </div>
 
-  <h2
-    class="text-xl font-bold text-blue-600 border-b border-blue-100 pb-2 mb-6"
-  >
-    Planos Semanais
-  </h2>
+  <!-- SEÇÃO: PLANOS SEMANAIS -->
+  <div class="mb-12">
+    <div class="flex items-center gap-3 mb-6 border-b border-blue-100 pb-3">
+        <div class="bg-blue-100 p-2 rounded-xl text-blue-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        </div>
+        <h2 class="text-xl font-black text-slate-800 uppercase tracking-wider">Planos Semanais</h2>
+    </div>
 
-  {% if not planos_semanais %}
-  <p class="text-slate-400 italic mb-10">
-    Ainda não guardou nenhum plano semanal.
-  </p>
-  {% else %}
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-    {% for plano in planos_semanais %}
-    <div
-      class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col h-full"
-    >
-      <div class="flex justify-between items-start mb-2">
-        <h3 class="font-bold text-lg text-slate-800">{{ plano.title }}</h3>
-        {% if plano.is_active %}
-        <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Ativo</span>
-        {% endif %}
+    {% if not planos_semanais %}
+      <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center">
+          <p class="text-slate-400 font-medium">Ainda não guardou nenhum plano semanal estruturado.</p>
       </div>
-      <p class="text-xs text-slate-400 mb-4">
-        Meta: {{ plano.target_kcal_per_day }} kcal/dia
-      </p>
+    {% else %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for plano in planos_semanais %}
+          {{ plano.plan_data|json_script:plano.id }}
+          <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+            <div class="flex justify-between items-start mb-4">
+                <div class="pr-8">
+                    <h3 class="font-black text-lg text-slate-800 leading-tight mb-1">{{ plano.title }}</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                            {{ plano.target_kcal_per_day|default:plano.plan_data.weekly_average_kcal|default:"--" }} kcal/dia
+                        </span>
+                        <span class="text-[10px] font-bold text-slate-400">{{ plano.plan_data.days|length }} dias</span>
+                    </div>
+                </div>
+                <form action="{% url 'ai:api-delete-item' %}" method="POST" onsubmit="return confirm('Excluir este plano?');" class="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ plano.id }}" />
+                    <input type="hidden" name="type" value="plano_semanal" />
+                    <button type="submit" class="p-2 text-slate-300 hover:text-red-500 rounded-full hover:bg-red-50 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </form>
+            </div>
 
-      <div class="flex-grow space-y-2 overflow-y-auto max-h-60 pr-2">
-        {% for day in plano.plan_data.days|slice:":3" %}
-          <div class="text-xs p-2 bg-slate-50 rounded-lg border border-slate-100">
-            <span class="font-bold text-slate-700">Dia {{ day.day_number }}:</span>
-            <span class="text-slate-500">{{ day.daily_total_kcal }} kcal</span>
+            <div class="space-y-2 mb-6 overflow-y-auto max-h-48 pr-1 custom-scrollbar">
+                {% for day in plano.plan_data.days %}
+                    <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Dia {{ day.day_number }}</span>
+                        <span class="text-xs font-bold text-slate-700 truncate max-w-[120px]">{{ day.meals.0.name }}</span>
+                        <span class="text-[10px] font-bold text-blue-500">{{ day.daily_total_kcal }}k</span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button onclick="openPlanFromId('{{ plano.id }}')" class="mt-auto w-full py-3 bg-blue-600 text-white rounded-2xl font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                Visualizar Plano Completo
+            </button>
           </div>
         {% endfor %}
-        {% if plano.plan_data.days|length > 3 %}
-          <p class="text-[10px] text-slate-400 italic text-center">+ {{ plano.plan_data.days|length|add:"-3" }} dias no plano completo</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+    <!-- SEÇÃO: DIETAS -->
+    <div>
+        <div class="flex items-center gap-3 mb-6 border-b border-emerald-100 pb-3">
+            <div class="bg-emerald-100 p-2 rounded-xl text-emerald-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+            </div>
+            <h2 class="text-xl font-black text-slate-800 uppercase tracking-wider">Dietas & Sugestões</h2>
+        </div>
+
+        {% if not dietas %}
+            <p class="text-slate-400 italic">Nenhuma dieta guardada.</p>
+        {% else %}
+            <div class="space-y-6">
+                {% for dieta in dietas %}
+                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-black text-lg text-slate-800 leading-tight">{{ dieta.title }}</h3>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{{ dieta.created_at|date:"d M Y, H:i" }}</p>
+                            </div>
+                            <form action="{% url 'ai:api-delete-item' %}" method="POST" onsubmit="return confirm('Excluir?');" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                {% csrf_token %}
+                                <input type="hidden" name="id" value="{{ dieta.id }}" /><input type="hidden" name="type" value="dieta" />
+                                <button type="submit" class="p-2 text-slate-300 hover:text-red-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </form>
+                        </div>
+                        <div class="prose prose-sm prose-emerald max-w-none line-clamp-4 markdown-content mb-6 text-slate-600" data-content="{{ dieta.content }}"></div>
+                        
+                        <form action="{% url 'ai:api-edit-item-ai' %}" method="POST" class="flex gap-2" onsubmit="mostrarCarregamento(this)">
+                            {% csrf_token %}
+                            <input type="hidden" name="id" value="{{ dieta.id }}" /><input type="hidden" name="type" value="dieta" />
+                            <input type="text" name="instruction" placeholder="Ajustar com IA..." class="flex-grow px-4 py-2 text-xs bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" required />
+                            <button type="submit" class="bg-emerald-50 text-emerald-600 p-2 rounded-xl hover:bg-emerald-100 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
         {% endif %}
-      </div>
-
-      <div class="mt-4 pt-4 border-t border-slate-100 flex justify-end gap-3">
-          <form
-            action="{% url 'ai:api-delete-item' %}"
-            method="POST"
-            onsubmit="
-              return confirm('Tem a certeza que deseja excluir este plano?');
-            "
-          >
-            {% csrf_token %}
-            <input type="hidden" name="id" value="{{ plano.id }}" />
-            <input type="hidden" name="type" value="plano_semanal" />
-            <button
-              type="submit"
-              class="text-xs font-semibold text-red-500 hover:text-red-700"
-            >
-              Excluir
-            </button>
-          </form>
-      </div>
     </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
-  <h2
-    class="text-xl font-bold text-emerald-700 border-b border-emerald-100 pb-2 mb-6"
-  >
-    Dietas Guardadas
-  </h2>
-
-  {% if not dietas %}
-  <p class="text-slate-400 italic mb-10">
-    Ainda não guardou nenhum plano alimentar.
-  </p>
-  {% else %}
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-    {% for dieta in dietas %}
-    <div
-      class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col h-full"
-    >
-      <h3 class="font-bold text-lg text-slate-800 mb-2">{{ dieta.title }}</h3>
-      <p class="text-xs text-slate-400 mb-4">
-        Guardado em: {{ dieta.created_at|date:"d M Y, H:i" }}
-      </p>
-
-      <div
-        class="prose prose-sm prose-emerald max-w-none flex-grow markdown-content overflow-y-auto max-h-60 pr-2"
-        data-content="{{ dieta.content }}"
-      ></div>
-
-      <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-3">
-        <form
-          action="{% url 'ai:api-edit-item-ai' %}"
-          method="POST"
-          class="flex gap-2 items-center"
-          onsubmit="mostrarCarregamento(this)"
-        >
-          {% csrf_token %}
-          <input type="hidden" name="id" value="{{ dieta.id }}" />
-          <input type="hidden" name="type" value="dieta" />
-          <input
-            type="text"
-            name="instruction"
-            placeholder="✨ Editar com IA (Ex: sem lactose)"
-            class="flex-grow px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500"
-            required
-          />
-          <button
-            type="submit"
-            class="text-sm font-bold text-emerald-600 hover:text-emerald-800 whitespace-nowrap transition-all"
-          >
-            Atualizar
-          </button>
-        </form>
-
-        <div class="flex justify-end">
-          <form
-            action="{% url 'ai:api-delete-item' %}"
-            method="POST"
-            onsubmit="
-              return confirm('Tem a certeza que deseja excluir esta dieta?');
-            "
-          >
-            {% csrf_token %}
-            <input type="hidden" name="id" value="{{ dieta.id }}" />
-            <input type="hidden" name="type" value="dieta" />
-            <button
-              type="submit"
-              class="text-xs font-semibold text-red-500 hover:text-red-700"
-            >
-              Excluir
-            </button>
-          </form>
+    <!-- SEÇÃO: RECEITAS -->
+    <div>
+        <div class="flex items-center gap-3 mb-6 border-b border-orange-100 pb-3">
+            <div class="bg-orange-100 p-2 rounded-xl text-orange-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            </div>
+            <h2 class="text-xl font-black text-slate-800 uppercase tracking-wider">Receitas</h2>
         </div>
-      </div>
+
+        {% if not receitas %}
+            <p class="text-slate-400 italic">Nenhuma receita guardada.</p>
+        {% else %}
+            <div class="space-y-6">
+                {% for receita in receitas %}
+                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-black text-lg text-slate-800 leading-tight">{{ receita.title }}</h3>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{{ receita.created_at|date:"d M Y, H:i" }}</p>
+                            </div>
+                            <form action="{% url 'ai:api-delete-item' %}" method="POST" onsubmit="return confirm('Excluir?');" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                {% csrf_token %}
+                                <input type="hidden" name="id" value="{{ receita.id }}" /><input type="hidden" name="type" value="receita" />
+                                <button type="submit" class="p-2 text-slate-300 hover:text-red-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </form>
+                        </div>
+                        <div class="prose prose-sm prose-orange max-w-none line-clamp-4 markdown-content mb-6 text-slate-600" data-content="{{ receita.content }}"></div>
+                        
+                        <form action="{% url 'ai:api-edit-item-ai' %}" method="POST" class="flex gap-2" onsubmit="mostrarCarregamento(this)">
+                            {% csrf_token %}
+                            <input type="hidden" name="id" value="{{ receita.id }}" /><input type="hidden" name="type" value="receita" />
+                            <input type="text" name="instruction" placeholder="Editar receita..." class="flex-grow px-4 py-2 text-xs bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" required />
+                            <button type="submit" class="bg-orange-50 text-orange-600 p-2 rounded-xl hover:bg-orange-100 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
-    {% endfor %}
   </div>
-  {% endif %}
-
-  <h2
-    class="text-xl font-bold text-orange-600 border-b border-orange-100 pb-2 mb-6"
-  >
-    Receitas Guardadas
-  </h2>
-
-  {% if not receitas %}
-  <p class="text-slate-400 italic">Ainda não guardou nenhuma receita.</p>
-  {% else %}
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {% for receita in receitas %}
-    <div
-      class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col h-full"
-    >
-      <h3 class="font-bold text-lg text-slate-800 mb-2">{{ receita.title }}</h3>
-      <p class="text-xs text-slate-400 mb-4">
-        Guardado em: {{ receita.created_at|date:"d M Y, H:i" }}
-      </p>
-
-      <div
-        class="prose prose-sm prose-orange max-w-none flex-grow markdown-content overflow-y-auto max-h-60 pr-2"
-        data-content="{{ receita.content }}"
-      ></div>
-
-      <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-3">
-        <form
-          action="{% url 'ai:api-edit-item-ai' %}"
-          method="POST"
-          class="flex gap-2 items-center"
-          onsubmit="mostrarCarregamento(this)"
-        >
-          {% csrf_token %}
-          <input type="hidden" name="id" value="{{ receita.id }}" />
-          <input type="hidden" name="type" value="receita" />
-          <input
-            type="text"
-            name="instruction"
-            placeholder="✨ Editar com IA (Ex: trocar frango por atum)"
-            class="flex-grow px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-orange-500"
-            required
-          />
-          <button
-            type="submit"
-            class="text-sm font-bold text-orange-500 hover:text-orange-700 whitespace-nowrap transition-all"
-          >
-            Atualizar
-          </button>
-        </form>
-
-        <div class="flex justify-end">
-          <form
-            action="{% url 'ai:api-delete-item' %}"
-            method="POST"
-            onsubmit="
-              return confirm('Tem a certeza que deseja excluir esta receita?');
-            "
-          >
-            {% csrf_token %}
-            <input type="hidden" name="id" value="{{ receita.id }}" />
-            <input type="hidden" name="type" value="receita" />
-            <button
-              type="submit"
-              class="text-xs font-semibold text-red-500 hover:text-red-700"
-            >
-              Excluir
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 </div>
 
 <script>
+  function closeModal() {
+    document.getElementById("plan-modal").classList.add("hidden");
+    document.body.style.overflow = "auto";
+  }
+
+  function openPlanFromId(scriptId) {
+    const scriptTag = document.getElementById(scriptId);
+    if (!scriptTag) return;
+    try {
+        const plan = JSON.parse(scriptTag.textContent);
+        openPlanDetails(plan);
+    } catch(e) {
+        console.error("Erro ao carregar plano:", e);
+    }
+  }
+
+  function openPlanDetails(plan) {
+    const modal = document.getElementById("plan-modal");
+    const content = document.getElementById("modal-content");
+    
+    document.getElementById("modal-title").innerText = `Plano Semanal: ${plan.weekly_average_kcal} kcal/dia`;
+    
+    let html = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+    plan.days.forEach(day => {
+        html += `
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-2">
+                    <span class="font-black text-blue-600 text-lg italic">DIA ${day.day_number}</span>
+                    <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">${day.daily_total_kcal} kcal</span>
+                </div>
+                <div class="space-y-4">
+        `;
+        day.meals.forEach(meal => {
+            html += `
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-700">${meal.label}</span>
+                        <span class="text-[10px] font-bold text-slate-400">${meal.total_kcal} kcal</span>
+                    </div>
+                    <div class="font-bold text-slate-800 text-sm mb-1">${meal.name}</div>
+                    <ul class="text-[11px] text-slate-500 space-y-0.5 list-disc list-inside">
+                        ${meal.ingredients.map(ing => `<li>${ing.name} (${ing.quantity_grams}g)</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+    });
+    html += `</div>`;
+    html += `
+        <div class="mt-8 bg-blue-50 rounded-2xl p-6 border border-blue-100">
+            <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2">🛒 Dicas de Compras</h3>
+            <ul class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 list-disc list-inside text-sm text-blue-700">
+                ${plan.shopping_list_tips.map(tip => `<li>${tip}</li>`).join('')}
+            </ul>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
   function mostrarCarregamento(formulario) {
     const botao = formulario.querySelector('button[type="submit"]');
-    const inputTexto = formulario.querySelector('input[type="text"]');
-
-    botao.innerHTML = "⏳ A processar...";
-    botao.classList.add("opacity-50", "pointer-events-none");
-
-    inputTexto.classList.add("opacity-50", "bg-slate-100");
-    inputTexto.readOnly = true;
+    botao.innerHTML = "⏳";
+    botao.disabled = true;
   }
 
   document.addEventListener("DOMContentLoaded", function () {
