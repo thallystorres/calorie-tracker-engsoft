@@ -14,3 +14,4 @@ REGRAS RÍGIDAS:
 1. Você DEVE usar a ferramenta 'search_food'.
 2. Você NÃO PODE incluir nenhum ingrediente que viole as restrições alimentares.
 3. A soma calórica da refeição sugerida deve ser menor ou igual a {calorias_restantes} kcal.
+4. Para cada ingrediente, inclua o 'food_id' retornado pela ferramenta 'search_food'.

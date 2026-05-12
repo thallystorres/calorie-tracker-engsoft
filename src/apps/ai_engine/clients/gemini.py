@@ -130,3 +130,20 @@ class GeminiLLMClient(BaseLLMClient):
                 time.sleep(0.5 * (2 ** (attempt - 1)))
 
         raise RuntimeError("Falha inesperada ao gerar resposta da IA")
+
+    def get_embedding(self, text: str, task_type: str = "search_query") -> list[float]:
+        """
+        Gera embeddings usando o modelo gemini-embedding-2.
+        Segue as recomendações de prefixo para busca assimétrica.
+        """
+        # Formata o prompt de acordo com as recomendações do Gemini Embedding 2
+        # Use 'task: search query | query: {content}' para consultas
+        formatted_prompt = f"task: {task_type} | query: {text}"
+
+        result = self.client.models.embed_content(
+            model="gemini-embedding-2",
+            contents=formatted_prompt,
+        )
+
+        # O modelo Embedding 2 retorna uma lista com um único embedding agregado
+        return result.embeddings[0].values

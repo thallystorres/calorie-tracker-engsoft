@@ -6,7 +6,7 @@ import pydantic
 
 
 class BaseLLMClient(ABC):
-    def __init__(self, model_name: str, temperature):
+    def __init__(self, model_name: str, temperature: float):
         self.model_name = model_name
         self.temperature = temperature
 
@@ -18,7 +18,7 @@ class BaseLLMClient(ABC):
         response_schema: type[pydantic.BaseModel],
         tools: list[Callable] | None = None,
     ) -> dict[str, Any]:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def generate_text(
@@ -27,4 +27,4 @@ class BaseLLMClient(ABC):
         user_prompt: str,
         tools: list[Callable] | None = None,
     ) -> str:
-        raise NotImplementedError
+        pass

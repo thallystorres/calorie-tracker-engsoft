@@ -13,6 +13,7 @@ class DietResponseSchema(BaseModel):
 
 
 class IngredientSchema(BaseModel):
+    food_id: int | None = Field(None, description="O ID do alimento no banco de dados, se disponível")
     name: str
     quantity_grams: float
 

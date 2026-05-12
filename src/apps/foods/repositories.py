@@ -1,6 +1,7 @@
 from typing import Any
 
-# from django.db.models import QuerySet
+from pgvector.django import L2Distance
+
 from .models import Food
 
 
@@ -21,3 +22,12 @@ class FoodRepository:
 
     def exists_by_name(self, name: str) -> bool:
         return Food.objects.filter(name__iexact=name).exists()
+
+    def search_semantic(self, embedding: list[float], limit: int = 5):
+        """
+        Busca alimentos semanticamente similares usando distância L2.
+        """
+        return (
+            Food.objects.annotate(distance=L2Distance("embedding", embedding))
+            .order_by("distance")[:limit]
+        )

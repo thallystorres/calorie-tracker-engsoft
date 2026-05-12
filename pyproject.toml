@@ -21,6 +21,7 @@ dependencies = [
   "djangorestframework-stubs>=3.16.9",
   "google-genai>=1.73.1",
   "pydantic>=2.13.3",
+  "pgvector>=0.3.6",
 ]
 
 [dependency-groups]

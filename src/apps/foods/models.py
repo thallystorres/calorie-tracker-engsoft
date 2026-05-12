@@ -3,6 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from pgvector.django import VectorField
 
 
 class Food(models.Model):
@@ -34,6 +35,7 @@ class Food(models.Model):
     outsource_fdc_id = models.IntegerField(null=True, blank=True)
 
     allergens = models.JSONField(default=list, blank=True)
+    embedding = VectorField(dimensions=3072, null=True, blank=True)
 
     @staticmethod
     def calculate_kcal_per_100g(

@@ -5,16 +5,26 @@ from apps.profiles.dependencies import get_profile_repository
 
 
 def search_food(query: str, limite: int = 5) -> str:
-    """Buscas {limite} alimentos no Banco de Dados. Não inclui refeições completas, somente alimentos vendidos em supermercados no Brasil (OpenFoodFacts). Funciona melhor com busca por termos chave."""
-    repo = get_food_repository()
-    alimentos = repo.list_foods(query=query)[:limite]
+    """Busca alimentos no banco de dados usando busca semântica para encontrar os itens mais relevantes."""
+    from apps.ai_engine.dependencies import get_gemini_client
 
-    if not alimentos.exists():
+    repo = get_food_repository()
+    client = get_gemini_client()
+
+    try:
+        # Gera o embedding da consulta com o prefixo recomendado para busca
+        query_embedding = client.get_embedding(query, task_type="search_query")
+        alimentos = repo.search_semantic(query_embedding, limit=limite)
+    except Exception:
+        # Fallback para busca por texto se o embedding falhar
+        alimentos = repo.list_foods(query=query)[:limite]
+
+    if not alimentos:
         return (
             f"Nenhum alimento encontrado com o termo '{query}'. Tente outro sinônimo."
         )
 
-    resultados = [f"- {a.name}: {a.kcal_per_100g} kcal/100g" for a in alimentos]
+    resultados = [f"- {a.name} (ID: {a.id}): {a.kcal_per_100g} kcal/100g" for a in alimentos]
     return "\n".join(resultados)
 
 

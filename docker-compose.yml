@@ -67,7 +67,7 @@ services:
   ##############################################################################
 
   db:
-    image: postgres:18
+    image: pgvector/pgvector:pg18-trixie
     volumes:
       - postgres_data:/var/lib/postgresql
     env_file:
