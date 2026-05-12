@@ -135,13 +135,6 @@
         <div id="tracker-feedback"></div>
 
         <datalist id="foods-list">
-          {% for food in foods %}
-          <option
-            data-id="{{ food.id }}"
-            data-allergens="{{ food.allergens|join:',' }}"
-            value="{{ food.name }} ({{ food.kcal_per_100g }} kcal/100g)"
-          ></option>
-          {% endfor %}
         </datalist>
 
         <div class="space-y-1.5">
@@ -188,14 +181,18 @@
                 <label class="text-sm font-semibold text-slate-700 ml-1"
                   >Alimento</label
                 >
-                <input
-                  list="foods-list"
-                  name="food_search"
-                  placeholder="Pesquise um alimento..."
-                  class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
-                  required
-                  autocomplete="off"
-                />
+                <div class="relative food-search-container">
+                  <input
+                    name="food_search"
+                    placeholder="Pesquise um alimento..."
+                    class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+                    required
+                    autocomplete="off"
+                  />
+                  <div class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg hidden search-results-dropdown max-h-60 overflow-y-auto">
+                    <!-- Results will be injected here -->
+                  </div>
+                </div>
               </div>
 
               <div class="space-y-1.5">
@@ -322,9 +319,64 @@
       const itemsContainer = document.getElementById("meal-items");
       const addItemBtn = document.getElementById("add-item-btn");
       const feedback = document.getElementById("tracker-feedback");
-      const datalistOptions = Array.from(
-        document.getElementById("foods-list").options,
-      );
+      const foodCache = new Map(); // label -> {id, allergens}
+
+      function debounce(func, timeout = 300) {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+      }
+
+      async function performSemanticSearch(query, dropdownEl, inputEl) {
+        if (!query || query.length < 3) {
+          dropdownEl.classList.add("hidden");
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/foods/search/?q=${encodeURIComponent(query)}`);
+          if (!response.ok) return;
+          const foods = await response.json();
+
+          if (foods.length === 0) {
+            dropdownEl.innerHTML = '<div class="p-3 text-sm text-slate-500">Nenhum alimento encontrado.</div>';
+          } else {
+            dropdownEl.innerHTML = "";
+            foods.forEach(food => {
+              const label = `${food.name} (${food.kcal_per_100g} kcal/100g)`;
+              const item = document.createElement("div");
+              item.className = "px-4 py-2 hover:bg-emerald-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-0";
+              item.textContent = label;
+              
+              item.addEventListener("mousedown", (e) => {
+                // Use mousedown instead of click to fire before input blur
+                inputEl.value = label;
+                dropdownEl.classList.add("hidden");
+                foodCache.set(label, {
+                  id: food.id,
+                  allergens: food.allergens || []
+                });
+                updateRowWarning(inputEl.closest(".item-row"));
+              });
+
+              dropdownEl.appendChild(item);
+
+              foodCache.set(label, {
+                id: food.id,
+                allergens: food.allergens || []
+              });
+            });
+          }
+          dropdownEl.classList.remove("hidden");
+        } catch (error) {
+          console.error("Search error:", error);
+        }
+      }
+
+      const debouncedSearch = debounce((query, dropdownEl, inputEl) => performSemanticSearch(query, dropdownEl, inputEl));
+
       const restrictionsEndpoint = trackerForm.dataset.restrictionsEndpoint;
       const restrictionAllergens = new Set();
       const restrictionMap = {
@@ -367,17 +419,6 @@
         }
       }
 
-      function getFoodAllergensFromOption(option) {
-        if (!option) {
-          return [];
-        }
-        const raw = option.dataset.allergens || "";
-        if (!raw) {
-          return [];
-        }
-        return raw.split(",").map((token) => token.trim()).filter(Boolean);
-      }
-
       function updateRowWarning(row) {
         if (!row) {
           return;
@@ -393,8 +434,8 @@
         }
 
         const inputValue = row.querySelector('input[name="food_search"]').value;
-        const option = datalistOptions.find((opt) => opt.value === inputValue);
-        const foodAllergens = getFoodAllergensFromOption(option);
+        const cachedFood = foodCache.get(inputValue);
+        const foodAllergens = cachedFood ? cachedFood.allergens : [];
         const conflicts = foodAllergens.filter((token) =>
           restrictionAllergens.has(token),
         );
@@ -467,7 +508,47 @@
         const target = evt.target;
         if (target && target.name === "food_search") {
           const row = target.closest(".item-row");
+          const dropdown = row.querySelector(".search-results-dropdown");
+          const query = target.value;
+
+          if (!foodCache.has(query)) {
+            debouncedSearch(query, dropdown, target);
+          } else {
+            dropdown.classList.add("hidden");
+          }
+
           updateRowWarning(row);
+        }
+      });
+
+      // Show dropdown on focus if there's enough text
+      itemsContainer.addEventListener("focusin", (evt) => {
+        const target = evt.target;
+        if (target && target.name === "food_search") {
+          const row = target.closest(".item-row");
+          const dropdown = row.querySelector(".search-results-dropdown");
+          if (target.value.length >= 3 && dropdown.children.length > 0) {
+            dropdown.classList.remove("hidden");
+          }
+        }
+      });
+
+      // Hide dropdown on blur (with delay to allow mousedown on items)
+      itemsContainer.addEventListener("focusout", (evt) => {
+        const target = evt.target;
+        if (target && target.name === "food_search") {
+          const row = target.closest(".item-row");
+          const dropdown = row.querySelector(".search-results-dropdown");
+          setTimeout(() => {
+            dropdown.classList.add("hidden");
+          }, 200);
+        }
+      });
+
+      // Close all dropdowns when clicking outside
+      document.addEventListener("click", (evt) => {
+        if (!evt.target.closest(".food-search-container")) {
+          document.querySelectorAll(".search-results-dropdown").forEach(d => d.classList.add("hidden"));
         }
       });
 
@@ -489,9 +570,9 @@
 
         const items = Array.from(rows).map((row) => {
           const inputValue = row.querySelector('input[name="food_search"]').value;
-          const option = datalistOptions.find(opt => opt.value === inputValue);
+          const cachedFood = foodCache.get(inputValue);
           return {
-            food_id: option ? Number(option.dataset.id) : null,
+            food_id: cachedFood ? cachedFood.id : null,
             quantity_grams: row.querySelector('input[name="quantity_grams"]').value,
           };
         });

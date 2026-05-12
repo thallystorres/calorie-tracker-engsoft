@@ -5,7 +5,7 @@ from apps.profiles.dependencies import get_profile_repository
 
 
 def search_food(query: str, limite: int = 15) -> str:
-    """Busca alimentos no banco de dados usando busca semântica. 
+    """Busca alimentos no banco de dados usando busca semântica.
     DICA: Você pode passar múltiplos termos separados por vírgula (ex: 'arroz, feijão, frango') para buscar tudo de uma vez.
     """
     from apps.ai_engine.dependencies import get_gemini_client
@@ -29,13 +29,13 @@ def search_food(query: str, limite: int = 15) -> str:
 
         for a in alimentos:
             if a.id not in seen_ids:
-                all_results.append(f"- {a.name} (ID: {a.id}): {a.kcal_per_100g} kcal/100g")
+                all_results.append(
+                    f"- {a.name} (ID: {a.id}): {a.kcal_per_100g} kcal/100g"
+                )
                 seen_ids.add(a.id)
 
     if not all_results:
-        return (
-            f"Nenhum alimento encontrado com os termos '{query}'. Tente outros sinônimos."
-        )
+        return f"Nenhum alimento encontrado com os termos '{query}'. Tente outros sinônimos."
 
     return "\n".join(all_results)
 

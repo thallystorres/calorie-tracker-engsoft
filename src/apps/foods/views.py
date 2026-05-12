@@ -37,6 +37,40 @@ class FoodListCreateView(APIView):
         return Response(output.data, status=status.HTTP_201_CREATED)
 
 
+class FoodSearchView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        query = request.query_params.get("q", "")
+        if not query:
+            return Response([], status=status.HTTP_200_OK)
+
+        from apps.ai_engine.dependencies import get_gemini_client
+
+        from .dependencies import get_food_repository
+
+        client = get_gemini_client()
+        repo = get_food_repository()
+
+        try:
+            query_embedding = client.get_embedding(query, task_type="search_query")
+            foods = repo.search_semantic(query_embedding, limit=10)
+        except Exception:
+            # Fallback to text search if embedding fails
+            foods = repo.list_foods(query=query)[:10]
+
+        data = [
+            {
+                "id": f.id,
+                "name": f.name,
+                "kcal_per_100g": f.kcal_per_100g,
+                "allergens": f.allergens,
+            }
+            for f in foods
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+
 class FoodDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

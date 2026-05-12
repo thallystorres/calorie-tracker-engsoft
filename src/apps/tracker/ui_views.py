@@ -13,15 +13,7 @@ from .dependencies import get_meal_repository
 @require_GET
 @login_required
 def tracker_page(request):
-    foods_repo = get_food_repository()
-    foods = foods_repo.list_foods()
-    return render(
-        request,
-        "tracker/tracker.html",
-        {
-            "foods": foods,
-        },
-    )
+    return render(request, "tracker/tracker.html")
 
 
 PROFILE_REQUIRED_CTX = {
