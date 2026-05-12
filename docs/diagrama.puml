@@ -30,6 +30,7 @@ package "Controllers" {
     + edit_item_ai(request): Response
     + delete_item(request): Response
     + shopping_list(request): Response
+    + weekly_planner(request): Response
   }
 }
 
@@ -65,6 +66,10 @@ package "Services" {
   class ShoppingListService << (S,lightgreen) >> {
     + generate_shopping_list(contents): str
   }
+
+  class WeeklyPlannerService << (S,lightgreen) >> {
+    + generate_plan(user): WeeklyPlan
+  }
 }
 
 package "Helpers" {
@@ -85,6 +90,7 @@ package "Helpers" {
 
   class ContextBuilder << (H,lightpink) >> {
     + add_profile_data(): ContextBuilder
+    + add_daily_progress(): ContextBuilder
     + add_history(): ContextBuilder
     + add_restrictions(): ContextBuilder
     + add_saved_contents(list): ContextBuilder
@@ -95,7 +101,12 @@ package "Helpers" {
   class PasswordResetTokenService << (H,lightpink) >>
   class ActivationEmailService << (H,lightpink) >>
   class PasswordResetEmailService << (H,lightpink) >>
-  class GeminiLLMClient << (H, lightpink) >>
+  class SimpleEmailService << (H,lightpink) >>
+  class ReminderEmailService << (H,lightpink) >>
+  class ExcessEmailService << (H,lightpink) >>
+  class GeminiLLMClient << (H, lightpink) >> {
+    + get_embedding(): list[float]
+  }
 
   class "Ferramentas de IA" as AITools << (H,lightpink) >> {
     + search_food(query): str
@@ -142,6 +153,7 @@ package "Entities" {
   class User << (E,orange) >>
   class SavedDiet << (E,orange) >>
   class SavedRecipe << (E,orange) >>
+  class WeeklyPlan << (E,orange) >>
 }
 
 ' Controllers → Services
@@ -154,6 +166,7 @@ TrackerController --> TrackerService
 AIEngineController --> MealSuggesterService
 AIEngineController --> DietAssistantService
 AIEngineController --> ShoppingListService
+AIEngineController --> WeeklyPlannerService
 
 ' Services → Repositories
 
@@ -168,9 +181,11 @@ ProfileService ----> ProfileRepository
 MealSuggesterService ----> ContextBuilder
 DietAssistantService ----> ContextBuilder
 ShoppingListService ----> ContextBuilder
+WeeklyPlannerService ----> ContextBuilder
 MealSuggesterService ----> BaseLLMClient
 DietAssistantService ----> BaseLLMClient
 ShoppingListService ----> BaseLLMClient
+WeeklyPlannerService ----> BaseLLMClient
 MealSuggesterService ----> AITools
 DietAssistantService ----> AITools
 
@@ -196,6 +211,9 @@ PasswordResetTokenService -u-|> BaseSignedTokenService
 
 ActivationEmailService -u-|> BaseEmailService
 PasswordResetEmailService -u-|> BaseEmailService
+SimpleEmailService -u-|> BaseEmailService
+ReminderEmailService -u-|> SimpleEmailService
+ExcessEmailService -u-|> SimpleEmailService
 
 GeminiLLMClient -u-|> BaseLLMClient
 
