@@ -10,6 +10,8 @@ from pydantic import TypeAdapter, ValidationError
 from ..exceptions import (
     LLMAPIKeyNotSetError,
     LLMAttemptsExhaustedError,
+    LLMRequestError,
+    LLMResponseError,
 )
 from .base import BaseLLMClient
 
@@ -91,8 +93,10 @@ class GeminiLLMClient(BaseLLMClient):
                     response = chat.send_message(function_responses)
 
                 return adapter.validate_json(str(response.text))
-            except ValidationError:
-                raise
+            except ValidationError as e:
+                raise LLMResponseError(
+                    "Resposta da IA não corresponde ao esquema esperado."
+                ) from e
             except (ConnectionError, TimeoutError, ValueError) as e:
                 if attempt == max_attempts:
                     raise LLMAttemptsExhaustedError(
@@ -134,7 +138,9 @@ class GeminiLLMClient(BaseLLMClient):
 
                 return str(response.text)
             except ValidationError:
-                raise
+                raise LLMResponseError(
+                    "Resposta da IA não corresponde ao esquema esperado."
+                ) from None
             except (ConnectionError, TimeoutError, ValueError) as e:
                 if attempt == max_attempts:
                     raise LLMAttemptsExhaustedError(
@@ -145,18 +151,15 @@ class GeminiLLMClient(BaseLLMClient):
         raise LLMAttemptsExhaustedError("Falha inesperada ao gerar texto da IA")
 
     def get_embedding(self, text: str, task_type: str = "search_query") -> list[float]:
-        """
-        Gera embeddings usando o modelo gemini-embedding-2.
-        Segue as recomendações de prefixo para busca assimétrica.
-        """
-        # Formata o prompt de acordo com as recomendações do Gemini Embedding 2
-        # Use 'task: search query | query: {content}' para consultas
         formatted_prompt = f"task: {task_type} | query: {text}"
 
-        result = self.client.models.embed_content(
-            model="gemini-embedding-2",
-            contents=formatted_prompt,
-        )
-
-        # O modelo Embedding 2 retorna uma lista com um único embedding agregado
-        return result.embeddings[0].values
+        try:
+            result = self.client.models.embed_content(
+                model="gemini-embedding-2",
+                contents=formatted_prompt,
+            )
+            return result.embeddings[0].values
+        except (ConnectionError, TimeoutError) as e:
+            raise LLMRequestError("Falha de conexão ao gerar embedding.") from e
+        except Exception as e:
+            raise LLMRequestError("Erro inesperado ao gerar embedding.") from e

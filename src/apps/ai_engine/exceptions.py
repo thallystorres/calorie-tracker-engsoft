@@ -31,16 +31,6 @@ class ProfileRequiredError(AIEngineError):
     pass
 
 
-class InsufficientDataError(AIEngineError):
-    """Lançada quando o usuário não possui os 7 dias mínimos de histórico (RN08)."""
-
-    default_detail = "Histórico insuficiente para gerar sugestões."
-    default_code = "insufficient_data"
-    default_status = 400
-
-    pass
-
-
 class LLMRequestError(AIEngineError):
     """Lançada quando a requisição ao LLM falha (rede, timeout, API)."""
 
