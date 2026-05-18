@@ -3,6 +3,7 @@ from pathlib import Path
 from django.contrib.auth.models import User
 
 from .clients.base import BaseLLMClient
+from .exceptions import LLMRequestError, LLMResponseError
 from .schemas import (
     AIPlannerResponseSchema,
     DietResponseSchema,
@@ -31,7 +32,7 @@ class WeeklyPlannerService:
                 response_schema=AIPlannerResponseSchema,
                 tools=[search_food],
             )
-        except Exception as e:
+        except (LLMRequestError, LLMResponseError) as e:
             return {
                 "state": "asking",
                 "message": f"Desculpe, tive um problema ao gerar o plano: {e!s}",
@@ -68,8 +69,8 @@ class DietAssistantService:
                 response_schema=DietResponseSchema,
                 tools=[search_food],
             )
-        except Exception as e:
-            return {"texto": "Desculpe, tive um problema de conexão.", "tipo": "chat"}
+        except (LLMRequestError, LLMResponseError) as e:
+            return {"texto": f"Desculpe, tive um problema de conexão: {e!s}", "tipo": "chat"}
 
     def edit_content_with_ai(self, current_content: str, instruction: str) -> str:
         with (PROMPTS_DIR / "edit_diet.txt").open(encoding="utf-8") as f:

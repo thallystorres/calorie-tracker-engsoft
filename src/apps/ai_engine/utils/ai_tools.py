@@ -1,7 +1,10 @@
+import logging
 from decimal import Decimal
 
 from apps.foods.dependencies import get_food_repository
 from apps.profiles.dependencies import get_profile_repository
+
+logger = logging.getLogger(__name__)
 
 
 def search_food(query: str, limite: int = 15) -> str:
@@ -20,11 +23,13 @@ def search_food(query: str, limite: int = 15) -> str:
 
     for term in terms:
         try:
-            # Gera o embedding da consulta com o prefixo recomendado para busca
             query_embedding = client.get_embedding(term, task_type="search_query")
             alimentos = repo.search_semantic(query_embedding, limit=limite)
+        except (ConnectionError, TimeoutError, ValueError) as e:
+            logger.warning("Embedding search fallback para texto termo=%s: %s", term, e)
+            alimentos = repo.list_foods(query=term)[:limite]
         except Exception:
-            # Fallback para busca por texto se o embedding falhar
+            logger.exception("Erro inesperado na busca semântica termo=%s", term)
             alimentos = repo.list_foods(query=term)[:limite]
 
         for a in alimentos:

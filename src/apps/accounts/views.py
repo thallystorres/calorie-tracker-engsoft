@@ -2,7 +2,6 @@ from typing import Any, cast
 
 from django.contrib.auth import login, logout
 from rest_framework import permissions, status
-from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -133,11 +132,8 @@ class AccountActivateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            service = get_user_service()
-            service.activate_account(token)
-        except ValidationError as e:
-            return Response({"detail": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        service = get_user_service()
+        service.activate_account(token)
 
         return Response(
             {"detail": "Conta ativada com sucesso."},
@@ -178,13 +174,10 @@ class PasswordResetConfirmView(APIView):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
-        try:
-            service = get_user_service()
-            service.reset_password_with_token(
-                token=token, new_password=validated_data["new_password"]
-            )
-        except ValidationError as e:
-            return Response({"detail": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        service = get_user_service()
+        service.reset_password_with_token(
+            token=token, new_password=validated_data["new_password"]
+        )
         return Response(
             {"detail": "Senha definida com sucesso"}, status=status.HTTP_200_OK
         )

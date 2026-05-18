@@ -1,8 +1,8 @@
+import json
+import logging
 import re
 from typing import cast
 
-from apps.profiles.dependencies import get_profile_repository
-from apps.profiles.models import SavedDiet, SavedRecipe, WeeklyPlan
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,13 +13,18 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.profiles.dependencies import get_profile_repository
+from apps.profiles.models import SavedDiet, SavedRecipe, WeeklyPlan
+
 from .dependencies import (
     get_diet_assistant_service,
     get_meal_suggester_service,
     get_shopping_list_service,
     get_weekly_planner_service,
 )
-from .exceptions import AIEngineError
+from .exceptions import LLMRequestError, LLMResponseError
+
+logger = logging.getLogger(__name__)
 
 
 class WeeklyPlannerChatAPIView(APIView):
@@ -30,17 +35,10 @@ class WeeklyPlannerChatAPIView(APIView):
         user = cast("User", request.user)
         service = get_weekly_planner_service()
 
-        try:
-            ai_reply_data = service.generate_weekly_plan(
-                user=user, user_message=user_message
-            )
-            return Response(ai_reply_data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response(
-                {"detail": f"Erro na IA: {e!s}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        ai_reply_data = service.generate_weekly_plan(
+            user=user, user_message=user_message
+        )
+        return Response(ai_reply_data, status=status.HTTP_200_OK)
 
 
 class SuggestMealView(APIView):
@@ -50,22 +48,13 @@ class SuggestMealView(APIView):
         user_prompt = request.data.get("user_prompt", "")
         user = cast("User", request.user)
 
-        try:
-            service = get_meal_suggester_service()
+        service = get_meal_suggester_service()
 
-            suggestion = service.suggest_meal(
-                user=user, user_prompt=str(user_prompt).strip()
-            )
+        suggestion = service.suggest_meal(
+            user=user, user_prompt=str(user_prompt).strip()
+        )
 
-            return Response(suggestion.model_dump(), status=status.HTTP_200_OK)
-
-        except AIEngineError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"detail": f"Erro interno do motor de IA: {e!s}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        return Response(suggestion.model_dump(), status=status.HTTP_200_OK)
 
 
 @login_required
@@ -81,22 +70,14 @@ class DietAssistantChatAPIView(APIView):
         user = cast("User", request.user)
         service = get_diet_assistant_service()
 
-        try:
-            ai_reply_data = service.generate_diet_suggestion(
-                user=user, user_message=user_message
-            )
+        ai_reply_data = service.generate_diet_suggestion(
+            user=user, user_message=user_message
+        )
 
-            # Retorna o texto e o tipo como JSON para o Frontend
-            return Response(
-                {"reply": ai_reply_data["texto"], "type": ai_reply_data["tipo"]},
-                status=status.HTTP_200_OK,
-            )
-
-        except Exception as e:
-            return Response(
-                {"detail": f"Erro na IA: {e!s}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        return Response(
+            {"reply": ai_reply_data["texto"], "type": ai_reply_data["tipo"]},
+            status=status.HTTP_200_OK,
+        )
 
 
 class SaveAIContentAPIView(APIView):
@@ -115,24 +96,20 @@ class SaveAIContentAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Cast para garantir que os tipos estáticos fiquem felizes
         user = cast("User", request.user)
         conteudo_str = str(conteudo)
 
         titulo_dinamico = ""
 
-        # 1. Se o frontend enviou um título específico, usamos ele
         if titulo_enviado:
             titulo_dinamico = str(titulo_enviado).strip()[:255]
 
-        # 2. Se não, tentamos extrair do próprio conteúdo em Markdown
         if not titulo_dinamico:
             match = re.search(r"^(#+)\s*(.+)", conteudo_str, re.MULTILINE)
             if match:
                 matched_str = str(match.group(2))
                 titulo_dinamico = matched_str.replace("*", "").strip()[:255]
 
-        # 3. Fallback dinâmico usando o nome do usuário, o tipo e a data atual
         if not titulo_dinamico:
             data_atual = timezone.localtime().strftime("%d/%m/%Y %H:%M")
             nome_usuario = getattr(user, "first_name", "") or getattr(
@@ -148,39 +125,34 @@ class SaveAIContentAPIView(APIView):
             else:
                 titulo_dinamico = f"Conteúdo Salvo - {data_atual}"
 
-        # ------------------------------------------
-
-        try:
-            if tipo == "dieta":
-                profile_repo.create_diet(user, titulo_dinamico, conteudo_str)
-            elif tipo == "receita":
-                profile_repo.create_recipe(user, titulo_dinamico, conteudo_str)
-            elif tipo == "plano_semanal":
-                import json
-
+        if tipo == "dieta":
+            profile_repo.create_diet(user, titulo_dinamico, conteudo_str)
+        elif tipo == "receita":
+            profile_repo.create_recipe(user, titulo_dinamico, conteudo_str)
+        elif tipo == "plano_semanal":
+            try:
                 plan_data = json.loads(conteudo_str)
-                # Extrai a média calórica do plano para salvar no modelo
-                target_kcal = plan_data.get("weekly_average_kcal")
-                profile_repo.create_weekly_plan(user, titulo_dinamico, plan_data, target_kcal=target_kcal)
-            else:
+            except json.JSONDecodeError:
                 return Response(
-                    {"error": "Tipo inválido."}, status=status.HTTP_400_BAD_REQUEST
+                    {"error": "Conteúdo do plano semanal não é um JSON válido."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
+            target_kcal = plan_data.get("weekly_average_kcal")
+            profile_repo.create_weekly_plan(user, titulo_dinamico, plan_data, target_kcal=target_kcal)
+        else:
+            return Response(
+                {"error": "Tipo inválido."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-            return Response(
-                {"status": "success", "message": "Salvo com sucesso!"},
-                status=status.HTTP_201_CREATED,
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        return Response(
+            {"status": "success", "message": "Salvo com sucesso!"},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @login_required
 def saved_items_page(request):
     repo = get_profile_repository()
-    # Pega as dietas e receitas do usuário logado, ordenando da mais recente para a mais antiga
     dietas = repo.list_diets(request.user)
     receitas = repo.list_recipes(request.user)
     planos_semanais = repo.list_weekly_plans(request.user)
@@ -196,7 +168,6 @@ def saved_items_page(request):
 @login_required
 @require_POST
 def delete_saved_item(request):
-    # Usamos request.POST para ler os dados do formulário HTML
     item_id = request.POST.get("id")
     item_type = request.POST.get("type")
 
@@ -210,14 +181,12 @@ def delete_saved_item(request):
         item = get_object_or_404(WeeklyPlan, id=item_id, user=request.user)
         item.delete()
 
-    # Após apagar do banco de dados, o Django recarrega a página de salvos
     return redirect("ai-ui:saved-items")
 
 
 @login_required
 @require_POST
 def edit_saved_item_with_ai(request):
-    # Lendo do formulário tradicional HTML
     item_id = request.POST.get("id")
     item_type = request.POST.get("type")
     instrucao = request.POST.get("instruction")
@@ -241,8 +210,12 @@ def edit_saved_item_with_ai(request):
         item.content = novo_conteudo
         item.save()
 
-    except Exception as e:
-        print(f"Erro na edição por IA: {e}")
+    except (LLMRequestError, LLMResponseError):
+        logger.exception("Erro na edicao por IA user_pk=%s", request.user.pk)
+    except Exception:
+        logger.exception(
+            "Erro inesperado na edicao por IA user_pk=%s", request.user.pk,
+        )
 
     return redirect("ai-ui:saved-items")
 
@@ -252,16 +225,13 @@ def shopping_list_page(request):
     lista_markdown = None
     repo = get_profile_repository()
 
-    # 1. Busca todos os itens para exibir as opções (checkboxes)
     dietas = repo.list_diets(request.user)
     receitas = repo.list_recipes(request.user)
 
     if request.method == "POST":
-        # 2. Pega as listas de IDs que o utilizador marcou no HTML
         dietas_selecionadas = request.POST.getlist("dietas_selecionadas")
         receitas_selecionadas = request.POST.getlist("receitas_selecionadas")
 
-        # 3. Filtra no banco de dados APENAS os conteúdos marcados
         conteudos_dietas = (
             repo.list_diets_from_id_list(request.user, dietas_selecionadas) or []
         )
@@ -272,7 +242,6 @@ def shopping_list_page(request):
 
         todos_conteudos = list(conteudos_dietas) + list(conteudos_receitas)
 
-        # 4. Envia para a IA apenas se houver algo selecionado
         if todos_conteudos:
             service = get_shopping_list_service()
             lista_markdown = service.generate_shopping_list(todos_conteudos)

@@ -1,3 +1,4 @@
+import logging
 from typing import Any, cast
 
 from rest_framework import permissions, status
@@ -11,6 +12,8 @@ from .serializers import (
     FoodCreateSerializer,
     FoodSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class FoodListCreateView(APIView):
@@ -55,8 +58,8 @@ class FoodSearchView(APIView):
         try:
             query_embedding = client.get_embedding(query, task_type="search_query")
             foods = repo.search_semantic(query_embedding, limit=10)
-        except Exception:
-            # Fallback to text search if embedding fails
+        except Exception as e:
+            logger.warning("Busca semântica falhou, fallback para texto: %s", e)
             foods = repo.list_foods(query=query)[:10]
 
         data = [

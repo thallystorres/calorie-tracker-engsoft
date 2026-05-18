@@ -1,9 +1,19 @@
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from rest_framework.exceptions import NotFound
 
+from .exceptions import InvalidProfileDataError
 from .models import FoodRestriction, NutritionalProfile
 from .repositories import NutritionalProfileRepository
+
+
+def get_profile_or_404(user: User) -> NutritionalProfile:
+    try:
+        return user.nutritional_profile
+    except NutritionalProfile.DoesNotExist:
+        msg = "Perfil Nutricional não encontrado."
+        raise NotFound(msg) from None
 
 
 class ProfileService:
@@ -20,7 +30,7 @@ class ProfileService:
             bmr -= Decimal(161)
         else:
             msg = f"Sexo '{sex}' inválido. Esperado: 'M' ou 'F'."
-            raise ValueError(msg)
+            raise InvalidProfileDataError(msg)
 
         return bmr.quantize(Decimal("0.01"))
 
@@ -46,7 +56,7 @@ class ProfileService:
                     f"activity_level '{activity_level}' inválido."
                     " Esperado: 'SEDENTARIO', 'LEVE', 'MODERADA', 'ALTA' ou 'MUITO ALTA'"
                 )
-                raise ValueError(msg)
+                raise InvalidProfileDataError(msg)
 
         daily_target = tdee
         match goal:
@@ -60,7 +70,7 @@ class ProfileService:
                 msg = (
                     f"goal '{goal}' inválida. Esperado: 'PERDA', 'MANUTENCAO', 'GANHO'"
                 )
-                raise ValueError(msg)
+                raise InvalidProfileDataError(msg)
 
         return daily_target.quantize(Decimal("0.01"))
 

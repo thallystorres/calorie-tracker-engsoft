@@ -1,4 +1,5 @@
 import logging
+import smtplib
 from datetime import timedelta
 
 from celery import shared_task
@@ -16,8 +17,8 @@ def _is_within_reminder_window(now_local) -> bool:
     return 8 <= now_local.hour < 22
 
 
-@shared_task
-def send_reminder_emails() -> int:
+@shared_task(bind=True, max_retries=2)
+def send_reminder_emails(self) -> int:
     now = timezone.now()
     now_local = timezone.localtime(now)
     if not _is_within_reminder_window(now_local):
@@ -34,28 +35,35 @@ def send_reminder_emails() -> int:
     sent = 0
 
     for user in users:
-        last_meal = (
-            Meal.objects.filter(user=user, eaten_at__date=today)
-            .order_by("-eaten_at")
-            .first()
-        )
-        if last_meal is None:
-            continue
-
-        interval_hours = user.nutritional_profile.remind_interval_hours or 3
-        delta = now - last_meal.eaten_at
-        if delta >= timedelta(hours=interval_hours):
-            email_service.send_email(user=user)
-            logger.info(
-                "REMINDER_EMAIL_SENT user_pk=%s recipient=%s", user.pk, user.email
+        try:
+            last_meal = (
+                Meal.objects.filter(user=user, eaten_at__date=today)
+                .order_by("-eaten_at")
+                .first()
             )
-            sent += 1
+            if last_meal is None:
+                continue
+
+            interval_hours = user.nutritional_profile.remind_interval_hours or 3
+            delta = now - last_meal.eaten_at
+            if delta >= timedelta(hours=interval_hours):
+                email_service.send_email(user=user)
+                logger.info(
+                    "REMINDER_EMAIL_SENT user_pk=%s recipient=%s", user.pk, user.email
+                )
+                sent += 1
+        except smtplib.SMTPException:
+            logger.exception("REMINDER_EMAIL_FAILED user_pk=%s", user.pk)
+        except Exception:
+            logger.exception(
+                "REMINDER_EMAIL_UNEXPECTED_ERROR user_pk=%s", user.pk,
+            )
 
     return sent
 
 
-@shared_task
-def send_excess_emails() -> int:
+@shared_task(bind=True, max_retries=2)
+def send_excess_emails(self) -> int:
     now_local = timezone.localtime(timezone.now())
     today = now_local.date()
 
@@ -70,17 +78,24 @@ def send_excess_emails() -> int:
     sent = 0
 
     for user in users:
-        profile = user.nutritional_profile
-        if profile.daily_calorie_target is None:
-            continue
+        try:
+            profile = user.nutritional_profile
+            if profile.daily_calorie_target is None:
+                continue
 
-        totals = meal_repo.get_daily_totals(user, today)
-        total_kcal = totals.get("kcal") or 0
-        if total_kcal >= profile.daily_calorie_target:
-            email_service.send_email(user=user)
-            logger.info(
-                "EXCESS_EMAIL_SENT user_pk=%s recipient=%s", user.pk, user.email
+            totals = meal_repo.get_daily_totals(user, today)
+            total_kcal = totals.get("kcal") or 0
+            if total_kcal >= profile.daily_calorie_target:
+                email_service.send_email(user=user)
+                logger.info(
+                    "EXCESS_EMAIL_SENT user_pk=%s recipient=%s", user.pk, user.email
+                )
+                sent += 1
+        except smtplib.SMTPException:
+            logger.exception("EXCESS_EMAIL_FAILED user_pk=%s", user.pk)
+        except Exception:
+            logger.exception(
+                "EXCESS_EMAIL_UNEXPECTED_ERROR user_pk=%s", user.pk,
             )
-            sent += 1
 
     return sent

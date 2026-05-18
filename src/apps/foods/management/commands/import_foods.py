@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -8,6 +9,8 @@ from django.core.management.base import BaseCommand
 
 from apps.foods.allergens import normalize_openfoodfacts_allergens
 from apps.foods.models import Food
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -119,9 +122,21 @@ class Command(BaseCommand):
 
                     time.sleep(1)
 
-                except Exception as e:  # noqa: BLE001
+                except (ConnectionError, TimeoutError, openfoodfacts.APIError) as e:
+                    logger.warning(
+                        "Falha de rede na importacao termo=%s pagina=%s: %s",
+                        termo, pagina, e,
+                    )
                     self.stdout.write(
-                        self.style.WARNING(f"Erro na página {pagina} de '{termo}': {e}")
+                        self.style.WARNING(f"Erro de rede na página {pagina} de '{termo}': {e}")
+                    )
+                    break
+                except Exception as e:
+                    logger.exception(
+                        "Erro inesperado na importacao termo=%s pagina=%s", termo, pagina,
+                    )
+                    self.stdout.write(
+                        self.style.ERROR(f"Erro inesperado na página {pagina} de '{termo}': {e}")
                     )
                     break
 

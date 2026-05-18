@@ -7,7 +7,10 @@ from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse, Part
 from pydantic import TypeAdapter, ValidationError
 
-from ..exceptions import LLMAPIKeyNotSetError
+from ..exceptions import (
+    LLMAPIKeyNotSetError,
+    LLMAttemptsExhaustedError,
+)
 from .base import BaseLLMClient
 
 
@@ -47,7 +50,7 @@ class GeminiLLMClient(BaseLLMClient):
                             name=call.name, response={"result": result}
                         )
                     )
-                except Exception as e:
+                except (ValueError, KeyError, TypeError) as e:
                     function_responses.append(
                         Part.from_function_response(
                             name=call.name, response={"error": str(e)}
@@ -90,12 +93,14 @@ class GeminiLLMClient(BaseLLMClient):
                 return adapter.validate_json(str(response.text))
             except ValidationError:
                 raise
-            except Exception:
+            except (ConnectionError, TimeoutError, ValueError) as e:
                 if attempt == max_attempts:
-                    raise
+                    raise LLMAttemptsExhaustedError(
+                        "Falha ao gerar resposta JSON da IA após múltiplas tentativas."
+                    ) from e
                 time.sleep(0.5 * (2 ** (attempt - 1)))
 
-        raise RuntimeError("Falha inesperada ao gerar resposta da IA")
+        raise LLMAttemptsExhaustedError("Falha inesperada ao gerar resposta JSON da IA")
 
     def generate_text(
         self,
@@ -130,12 +135,14 @@ class GeminiLLMClient(BaseLLMClient):
                 return str(response.text)
             except ValidationError:
                 raise
-            except Exception:
+            except (ConnectionError, TimeoutError, ValueError) as e:
                 if attempt == max_attempts:
-                    raise
+                    raise LLMAttemptsExhaustedError(
+                        "Falha ao gerar texto da IA após múltiplas tentativas."
+                    ) from e
                 time.sleep(0.5 * (2 ** (attempt - 1)))
 
-        raise RuntimeError("Falha inesperada ao gerar resposta da IA")
+        raise LLMAttemptsExhaustedError("Falha inesperada ao gerar texto da IA")
 
     def get_embedding(self, text: str, task_type: str = "search_query") -> list[float]:
         """

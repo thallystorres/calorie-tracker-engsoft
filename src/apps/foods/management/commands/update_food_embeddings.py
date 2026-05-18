@@ -1,9 +1,12 @@
 import concurrent.futures
+import logging
 
 from django.core.management.base import BaseCommand
 
 from apps.ai_engine.dependencies import get_gemini_client
 from apps.foods.models import Food
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -27,7 +30,6 @@ class Command(BaseCommand):
         # Função de processamento para cada alimento
         def process_food(food_id):
             try:
-                # Recupera o objeto do banco para evitar problemas de thread safety com objetos compartilhados
                 food = Food.objects.get(id=food_id)
                 doc_text = f"title: {food.name} | text: {food.name}"
 
@@ -39,8 +41,19 @@ class Command(BaseCommand):
                 food.embedding = result.embeddings[0].values
                 food.save(update_fields=["embedding"])
                 return True, food.name
+            except Food.DoesNotExist:
+                logger.warning("Alimento nao encontrado para embedding: id=%s", food_id)
+                return False, f"{food_id}: alimento não encontrado"
+            except (ConnectionError, TimeoutError, ValueError) as e:
+                logger.warning(
+                    "Erro de conexao ao gerar embedding food_id=%s: %s", food_id, e,
+                )
+                return False, f"{food_id}: {e}"
             except Exception as e:
-                return False, f"{food_id}: {str(e)}"
+                logger.exception(
+                    "Erro inesperado ao gerar embedding food_id=%s", food_id,
+                )
+                return False, f"{food_id}: {e}"
 
         # Usando ThreadPoolExecutor para paralelismo I/O
         # Limitamos a 10 threads para não estourar rate limits da API rapidamente

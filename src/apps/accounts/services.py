@@ -1,4 +1,5 @@
 import logging
+import smtplib
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -11,6 +12,7 @@ from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.urls import reverse
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 
+from .exceptions import EmailSendError
 from .repositories import UserRepository
 
 logging.basicConfig(
@@ -291,8 +293,9 @@ class UserService:
         try:
             token = token_service.generate(user)
             email_service.send_email(user=user, token=token, request=request)
-        except Exception:
+        except (smtplib.SMTPException, OSError) as e:
             logging.exception(log_msg, user.pk)
+            raise EmailSendError("Falha ao enviar e-mail de notificação.") from e
 
     def _get_user_from_token(
         self,
