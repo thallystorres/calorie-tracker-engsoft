@@ -22,13 +22,12 @@ O Framework a ser gerado deve ser extraído das funcionalidades implementadas na
 - **Envio de Emails:** Sistema de Envio de Emails para Notificar o Usuário.
 - **Perfil do Usuário:** Perfil com Informações Relevantes do Usuário
 - **Armazenamento de Histórico:** Armazenar Ações Relevantes do Usuário
-- **Sugestão Preditiva:** Geração de Sugestões Baseadas no Perfil, Metas e Histórico do Usuário por meio de LLM.
 
 ### Pontos Variáveis (A ser Extendido pela Aplicação Implementada)
 
 - **Métricas a Serem Rastreadas:s** Métricas relevantes no Domínio da Aplicação Implementada.
 - **Metas do Usuário:** Metas Concretas do Usuário, estabelecidas por meio de uma meta abstrata do Usuário + Análise de Perfil.
-- **Tipo de Sugestão da IA:** Tipos de Conteúdos a serem Gerados pela LLM.
+- **Sugestão Preditiva:** Geração de Sugestões Baseadas no Perfil, Metas e Histórico do Usuário por meio de LLM, que gera um objeto json seguindo um formato especificado previamente.
 
 ## Aplicações a Serem Implementadas (Instâncias do Framework)
 
@@ -50,12 +49,25 @@ Aplicação para acompanhamento nutricional.
 
 Aplicação para Acompanhamento Fitness.
 
--
+<!-- Pemritir outros esportes além de Musculação? -->
+- Rastreia o histórico de Treinos do Usuário
+- Calcula o Volume por grupamento muscular
+- Gera/Calcula Metas Relacionadas à progressão do volume de treino
+- Permite a Geração de sugestões de Rotinas Semanais de Treino
+  -
+
 ### EstudaAI
 
 Aplicação para Acompanhamento Acadêmico.
 
--
+<!-- Permitir Estudar pelo método de Rubber Duck com a IA -->
+- Rastreia as Seções de Estudo do Usuário seguindo alguma estratégia de Estudo (Método de Pomodoro, etc.)
+- Metas de Estudo: Número de Conteúdos Estudados, Tempo alvo de Estudo por semana, Recall de Conteúdos e Taxa de Acertos em Simulados
+- Permite a Geração de Resumos, Flashcards, Simulados e Mapas mentais via LLM, que tem acesso á:
+  - Anotações do Usuário
+  - Conteúdos
+  - Metas de Estudo
+
 
 ## Comaparativo entre instâncias
 
@@ -65,3 +77,7 @@ Aplicação para Acompanhamento Acadêmico.
 | Métrica Principal | Calorias (Kcal)   | Volume (Kg\*rep)   | Tempo (minutos)  |
 | Meta              | Superavit/Deficit | Progessão de Carga | Retenção/Foco    |
 | Saída de IA       | Plano de Dieta    | Periodização       | Questionários    |
+
+## Arquitetura do Projeto
+
+(A ser escrita quando o Framewok for implementado)
