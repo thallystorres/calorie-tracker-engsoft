@@ -2,7 +2,8 @@ from functools import cache
 
 from .clients.gemini import GeminiLLMClient
 from .services import (
-    DietAssistantService,
+    AIEngineService,
+    DietAssistantStrategy,
     MealSuggesterService,
     ShoppingListService,
     WeeklyPlannerService,
@@ -15,8 +16,9 @@ def get_gemini_client() -> GeminiLLMClient:
 
 
 @cache
-def get_diet_assistant_service() -> DietAssistantService:
-    return DietAssistantService(get_gemini_client())
+def get_ai_engine_service() -> AIEngineService:
+    strategy = DietAssistantStrategy(get_gemini_client())
+    return AIEngineService(strategy=strategy)
 
 
 @cache

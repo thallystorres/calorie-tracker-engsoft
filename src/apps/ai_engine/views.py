@@ -17,7 +17,7 @@ from apps.profiles.dependencies import get_profile_repository
 from apps.profiles.models import SavedDiet, SavedRecipe, WeeklyPlan
 
 from .dependencies import (
-    get_diet_assistant_service,
+    get_ai_engine_service,
     get_meal_suggester_service,
     get_shopping_list_service,
     get_weekly_planner_service,
@@ -63,21 +63,20 @@ def chat_page(request):
 
 
 class DietAssistantChatAPIView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+  permission_classes = (permissions.IsAuthenticated,)
 
-    def post(self, request: Request) -> Response:
-        user_message = str(request.data.get("message", "")).strip()
-        user = cast("User", request.user)
-        service = get_diet_assistant_service()
+  def post(self, request: Request) -> Response:
+    user_message = str(request.data.get("message", "")).strip()
+    user = cast("User", request.user)
 
-        ai_reply_data = service.generate_diet_suggestion(
-            user=user, user_message=user_message
-        )
+    service = get_ai_engine_service()
 
-        return Response(
-            {"reply": ai_reply_data["texto"], "type": ai_reply_data["tipo"]},
-            status=status.HTTP_200_OK,
-        )
+    ai_reply_data = service.execute_prompt(user=user, prompt=user_message)
+
+    return Response(
+      {"reply": ai_reply_data["texto"], "type": ai_reply_data["tipo"]},
+      status=status.HTTP_200_OK,
+    )
 
 
 class SaveAIContentAPIView(APIView):
@@ -202,9 +201,10 @@ def edit_saved_item_with_ai(request):
         else:
             return redirect("ai-ui:saved-items")
 
-        service = get_diet_assistant_service()
-        novo_conteudo = service.edit_content_with_ai(
-            current_content=item.content, instruction=instrucao
+        service = get_ai_engine_service()
+
+        novo_conteudo = service.execute_edit(
+          current_content=item.content, instruction=instrucao
         )
 
         item.content = novo_conteudo

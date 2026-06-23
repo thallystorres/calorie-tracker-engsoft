@@ -11,6 +11,8 @@ from .schemas import (
 )
 from .utils.ai_tools import adjust_future_targets, search_food
 from .utils.context_builder import ContextBuilder
+from .strategies import AIAssistantStrategy
+from typing import Any
 
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 
@@ -40,48 +42,61 @@ class WeeklyPlannerService:
             }
 
 
-class DietAssistantService:
-    def __init__(self, llm_client: BaseLLMClient):
-        self.llm_client = llm_client
+class AIEngineService:
+  """Core do Framework que delega a execução para a Instância ativa (Strategy)"""
 
-    def generate_diet_suggestion(self, user: User, user_message: str = "") -> dict:
-        context = (
-            ContextBuilder(user)
-            .add_profile_data()
-            .add_daily_progress()
-            .add_history()
-            .add_restrictions()
-            .build()
-        )
+  def __init__(self, strategy: AIAssistantStrategy):
+    self._strategy = strategy
 
-        with (PROMPTS_DIR / "diet_suggestion.txt").open(encoding="utf-8") as f:
-            system_prompt = f.read().format(**context)
+  def execute_prompt(self, user: User, prompt: str) -> dict[str, Any]:
+    return self._strategy.generate_suggestion(user, prompt)
 
-        user_message = (
-            user_message.strip()
-            or "Por favor, monte uma sugestão de dieta para hoje com os alimentos do banco."
-        )
+  def execute_edit(self, current_content: str, instruction: str) -> str:
+    return self._strategy.edit_content(current_content, instruction)
 
-        try:
-            return self.llm_client.generate_json(
-                system_prompt=system_prompt,
-                user_prompt=user_message,
-                response_schema=DietResponseSchema,
-                tools=[search_food],
-            )
-        except (LLMRequestError, LLMResponseError) as e:
-            return {"texto": f"Desculpe, tive um problema de conexão: {e!s}", "tipo": "chat"}
 
-    def edit_content_with_ai(self, current_content: str, instruction: str) -> str:
-        with (PROMPTS_DIR / "edit_diet.txt").open(encoding="utf-8") as f:
-            system_prompt = f.read().format(
-                current_content=current_content, instruction=instruction
-            )
+class DietAssistantStrategy(AIAssistantStrategy):
+  def __init__(self, llm_client: BaseLLMClient):
+    self.llm_client = llm_client
 
-        novo_conteudo = self.llm_client.generate_text(
-            system_prompt=system_prompt, user_prompt=instruction, tools=[search_food]
-        )
-        return novo_conteudo.strip()
+  def generate_suggestion(self, user: User, prompt: str) -> dict[str, Any]:
+    context = (
+      ContextBuilder(user)
+      .add_profile_data()
+      .add_daily_progress()
+      .add_history()
+      .add_restrictions()
+      .build()
+    )
+
+    with (PROMPTS_DIR / "diet_suggestion.txt").open(encoding="utf-8") as f:
+      system_prompt = f.read().format(**context)
+
+    prompt = (
+      prompt.strip()
+      or "Por favor, monte uma sugestão de dieta para hoje com os alimentos do banco."
+    )
+
+    try:
+      return self.llm_client.generate_json(
+        system_prompt=system_prompt,
+        user_prompt=prompt,
+        response_schema=DietResponseSchema,
+        tools=[search_food],
+      )
+    except (LLMRequestError, LLMResponseError) as e:
+      return {"texto": f"Desculpe, tive um problema de conexão: {e!s}", "tipo": "chat"}
+
+  def edit_content(self, current_content: str, instruction: str) -> str:
+    with (PROMPTS_DIR / "edit_diet.txt").open(encoding="utf-8") as f:
+      system_prompt = f.read().format(
+        current_content=current_content, instruction=instruction
+      )
+
+    novo_conteudo = self.llm_client.generate_text(
+      system_prompt=system_prompt, user_prompt=instruction, tools=[search_food]
+    )
+    return novo_conteudo.strip()
 
 
 class MealSuggesterService:
