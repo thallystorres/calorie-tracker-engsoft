@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+from apps.smarttracker_fw.models import BaseAIGeneratedContent, BaseProfile
 
-class NutritionalProfile(models.Model):
+
+class NutritionalProfile(BaseProfile):
     class SexChoices(models.TextChoices):
         MALE = "M", "Masculino"
         FEMALE = "F", "Feminino"
@@ -37,11 +39,6 @@ class NutritionalProfile(models.Model):
     daily_calorie_target = models.DecimalField(
         max_digits=7, decimal_places=2, null=True, blank=True
     )
-    remind_interval_hours = models.PositiveSmallIntegerField(default=3)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return f"Perfil Nutricional - {self.user.username}"  # type: ignore
 
 
 class FoodRestriction(models.Model):
@@ -70,26 +67,16 @@ class FoodRestriction(models.Model):
         return f"{self.profile} - {self.get_restriction_type_display()}"
 
 
-class SavedDiet(models.Model):
+class SavedDiet(BaseAIGeneratedContent):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_diets")
     title = models.CharField(max_length=255, default="Plano Alimentar Inteligente")
-    content = models.TextField(help_text="Conteúdo em Markdown gerado pela IA")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.title} - {self.user.username}"
 
 
-class SavedRecipe(models.Model):
+class SavedRecipe(BaseAIGeneratedContent):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="saved_recipes"
     )
     title = models.CharField(max_length=255, default="Receita Saudável")
-    content = models.TextField(help_text="Conteúdo em Markdown gerado pela IA")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.title} - {self.user.username}"
 
 
 class WeeklyPlan(models.Model):
@@ -97,16 +84,9 @@ class WeeklyPlan(models.Model):
         User, on_delete=models.CASCADE, related_name="weekly_plans"
     )
     title = models.CharField(max_length=255, default="Meu Plano Semanal")
-
-    is_active = models.BooleanField(
-        default=False, help_text="É o plano que o usuário está seguindo agora?"
-    )
+    is_active = models.BooleanField(default=False)
     start_date = models.DateField(null=True, blank=True)
     target_kcal_per_day = models.DecimalField(max_digits=7, decimal_places=2, null=True)
-
-    plan_data = models.JSONField(
-        help_text="JSON estruturado contendo os dias, refeições e ingredientes"
-    )
-
+    plan_data = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
