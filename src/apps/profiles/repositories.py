@@ -1,6 +1,8 @@
+from django.contrib.auth.models import User
+
 from apps.smarttracker_fw.core.repositories import BaseRepository
 
-from .models import NutritionalProfile, SavedDiet, SavedRecipe, WeeklyPlan
+from .models import NutritionalProfile, SavedDiet
 
 
 class NutritionalProfileRepository(BaseRepository[NutritionalProfile]):

@@ -5,9 +5,8 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from apps.profiles.dependencies import get_profile_service
+from apps.smarttracker_fw.core.exceptions import ProfileRequiredError
 from apps.tracker.dependencies import get_meal_repository
-
-from ..exceptions import ProfileRequiredError
 
 
 class ContextBuilder:

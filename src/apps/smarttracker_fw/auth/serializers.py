@@ -5,8 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from .dependencies import get_user_repository, get_user_service
-from .repositories import UserRepository
+from .dependencies import get_base_user_repository, get_base_user_service
 
 
 def _run_password_validators(password: str, user: User | None = None) -> None:
@@ -32,7 +31,7 @@ class AccountRegisterSerializer(serializers.ModelSerializer):
         )
 
     def __init__(self, *args, **kwargs):
-        self.user_repository = kwargs.pop("user_repository", get_user_repository())
+        self.user_repository = kwargs.pop("user_repository", get_base_user_repository())
         super().__init__(*args, **kwargs)
 
     def validate_username(self, value: str) -> str:
@@ -67,7 +66,7 @@ class AccountSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "username")
 
     def __init__(self, *args, **kwargs):
-        self.user_repository = kwargs.pop("user_repository", get_user_repository())
+        self.user_repository = kwargs.pop("user_repository", get_base_user_repository())
         super().__init__(*args, **kwargs)
 
     def validate_email(self, value: str) -> str:
@@ -86,7 +85,7 @@ class AccountLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def __init__(self, *args, **kwargs):
-        self.user_service = kwargs.pop("user_service", get_user_service())
+        self.user_service = kwargs.pop("user_service", get_base_user_service())
         super().__init__(*args, **kwargs)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:

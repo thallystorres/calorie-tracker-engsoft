@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from apps.profiles.dependencies import get_profile_repository
 from apps.profiles.models import SavedDiet, SavedRecipe, WeeklyPlan
+from apps.smarttracker_fw.core.exceptions import LLMRequestError, LLMResponseError
 
 from .dependencies import (
     get_diet_assistant_service,
@@ -22,7 +23,6 @@ from .dependencies import (
     get_shopping_list_service,
     get_weekly_planner_service,
 )
-from .exceptions import LLMRequestError, LLMResponseError
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,9 @@ class SaveAIContentAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             target_kcal = plan_data.get("weekly_average_kcal")
-            profile_repo.create_weekly_plan(user, titulo_dinamico, plan_data, target_kcal=target_kcal)
+            profile_repo.create_weekly_plan(
+                user, titulo_dinamico, plan_data, target_kcal=target_kcal
+            )
         else:
             return Response(
                 {"error": "Tipo inválido."}, status=status.HTTP_400_BAD_REQUEST
@@ -214,7 +216,8 @@ def edit_saved_item_with_ai(request):
         logger.exception("Erro na edicao por IA user_pk=%s", request.user.pk)
     except Exception:
         logger.exception(
-            "Erro inesperado na edicao por IA user_pk=%s", request.user.pk,
+            "Erro inesperado na edicao por IA user_pk=%s",
+            request.user.pk,
         )
 
     return redirect("ai-ui:saved-items")

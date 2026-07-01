@@ -2,8 +2,9 @@ from pathlib import Path
 
 from django.contrib.auth.models import User
 
-from .clients.base import BaseLLMClient
-from .exceptions import LLMRequestError, LLMResponseError
+from apps.smarttracker_fw.ai.services import BaseLLMClient
+from apps.smarttracker_fw.core.exceptions import LLMRequestError, LLMResponseError
+
 from .schemas import (
     AIPlannerResponseSchema,
     DietResponseSchema,
@@ -70,7 +71,10 @@ class DietAssistantService:
                 tools=[search_food],
             )
         except (LLMRequestError, LLMResponseError) as e:
-            return {"texto": f"Desculpe, tive um problema de conexão: {e!s}", "tipo": "chat"}
+            return {
+                "texto": f"Desculpe, tive um problema de conexão: {e!s}",
+                "tipo": "chat",
+            }
 
     def edit_content_with_ai(self, current_content: str, instruction: str) -> str:
         with (PROMPTS_DIR / "edit_diet.txt").open(encoding="utf-8") as f:

@@ -1,6 +1,7 @@
 from functools import cache
 
-from .clients.gemini import GeminiLLMClient
+from apps.smarttracker_fw.ai.services import GeminiLLMClient
+
 from .services import (
     DietAssistantService,
     MealSuggesterService,

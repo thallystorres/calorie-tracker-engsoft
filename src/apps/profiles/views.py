@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .dependencies import get_food_restriction_repository, get_profile_service
+from .dependencies import get_profile_service
 from .models import FoodRestriction, NutritionalProfile
 from .serializers import FoodRestrictionSerializer, NutritionalProfileSerializer
 from .services import get_profile_or_404

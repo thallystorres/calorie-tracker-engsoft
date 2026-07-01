@@ -1,11 +1,9 @@
 from functools import cache
 
+from apps.smarttracker_fw.auth.dependencies import get_base_user_service
+
 from .repositories import UserRepository
 from .services import (
-    ActivationEmailService,
-    ActivationTokenService,
-    PasswordResetEmailService,
-    PasswordResetTokenService,
     UserService,
 )
 
@@ -16,11 +14,8 @@ def get_user_repository() -> UserRepository:
 
 
 @cache
+# Gambiarra pra manter compatibilidade
 def get_user_service() -> UserService:
-    return UserService(
-        user_repository=get_user_repository(),
-        activation_token_service=ActivationTokenService(),
-        password_reset_token_service=PasswordResetTokenService(),
-        activation_email_service=ActivationEmailService(),
-        password_reset_email_service=PasswordResetEmailService(),
-    )
+    user_service = get_base_user_service()
+    user_service.__class__ = UserService
+    return user_service
