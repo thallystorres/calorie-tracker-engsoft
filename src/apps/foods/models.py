@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from apps.smarttracker_fw.models import BaseCatalogItem
+from apps.smarttracker_fw.tracking.models import BaseCatalogItem
 
 
 class Food(BaseCatalogItem):

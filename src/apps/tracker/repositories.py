@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.db.models import DecimalField, ExpressionWrapper, F, QuerySet, Sum
 from django.db.models.functions import TruncDate
 
+from apps.smarttracker_fw.tracking.repositories import BaseTrackerRepository
+
 from .models import Meal, MealItem
 
 MACROS = {
@@ -13,14 +15,20 @@ MACROS = {
 }
 
 
-class MealRepository:
-    def create_meal(self, *, user: User, label: str) -> Meal:
-        return Meal.objects.create(user=user, label=label)
+class MealRepository(BaseTrackerRepository[Meal, MealItem]):
+    def __init__(self):
+        super().__init__(event_model=Meal, item_model=MealItem)
 
-    def create_meal_item(self, *, meal: Meal, food, quantity_grams) -> MealItem:
-        return MealItem.objects.create(
-            meal=meal, food=food, quantity_grams=quantity_grams
-        )
+    def create_items(self, event: Meal, items_data: list[dict]) -> list[MealItem]:
+        items = [
+            self.item_model(
+                meal=event, food=data["food_id"], quantity_grams=data["quantity_grams"]
+            )
+            for data in items_data
+        ]
+        for item in items:
+            item.save()
+        return items
 
     def get_meals_for_user(self, *, user: User) -> QuerySet[Meal]:
         return (

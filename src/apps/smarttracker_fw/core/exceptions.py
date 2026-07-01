@@ -1,6 +1,3 @@
-from core.exceptions import AppError
-
-
 class AppError(Exception):
     """Exceção Base para erros a nível de aplicação"""
 

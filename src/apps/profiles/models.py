@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import models
 
-from apps.smarttracker_fw.models import BaseAIGeneratedContent, BaseProfile
+from apps.smarttracker_fw.profiles.models import BaseProfile
+from apps.smarttracker_fw.tracking.models import BaseAIGeneratedContent
 
 
 class NutritionalProfile(BaseProfile):

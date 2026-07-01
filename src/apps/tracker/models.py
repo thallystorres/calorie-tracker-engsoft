@@ -5,7 +5,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from apps.foods.models import Food
-from apps.smarttracker_fw.models import BaseTrackedEvent, BaseTrackedItem
+from apps.smarttracker_fw.tracking.models import BaseTrackedEvent, BaseTrackedItem
 
 
 class Meal(BaseTrackedEvent):

@@ -3,7 +3,8 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from rest_framework.exceptions import NotFound
 
-from .exceptions import InvalidProfileDataError
+from apps.smarttracker_fw.core.exceptions import InvalidProfileDataError
+
 from .models import FoodRestriction, NutritionalProfile
 from .repositories import NutritionalProfileRepository
 
