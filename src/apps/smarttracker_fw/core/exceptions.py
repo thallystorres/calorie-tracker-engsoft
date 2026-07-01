@@ -1,6 +1,25 @@
 from core.exceptions import AppError
 
 
+class AppError(Exception):
+    """Exceção Base para erros a nível de aplicação"""
+
+    default_detail = "Ocorreu um erro inesperado."
+    default_code = "error"
+    default_status = 400
+
+    def __init__(
+        self,
+        detail: str | None = None,
+        code: str | None = None,
+        status: int | None = None,
+    ):
+        self.detail = detail or self.default_detail
+        self.code = code or self.default_code
+        self.status = status or self.default_status
+        super().__init__(self.detail)
+
+
 class AIEngineError(AppError):
     """Exceção base para o módulo de IA."""
 
@@ -59,3 +78,15 @@ class LLMAttemptsExhaustedError(AIEngineError):
     default_status = 503
 
     pass
+
+
+class EmailSendError(AppError):
+    default_detail = "Falha ao enviar e-mail."
+    default_code = "email_send_error"
+    default_status = 500
+
+
+class InvalidProfileDataError(AppError):
+    default_detail = "Dado de perfil inválido."
+    default_code = "invalid_profile_data"
+    default_status = 422

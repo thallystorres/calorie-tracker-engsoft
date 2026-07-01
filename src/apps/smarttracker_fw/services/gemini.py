@@ -13,7 +13,7 @@ from ..exceptions import (
     LLMRequestError,
     LLMResponseError,
 )
-from .base import BaseLLMClient
+from .base_ai import BaseLLMClient
 
 
 class GeminiLLMClient(BaseLLMClient):
@@ -87,7 +87,9 @@ class GeminiLLMClient(BaseLLMClient):
                 function_call_count = 0
                 max_function_calls = 10
 
-                while response.function_calls and function_call_count < max_function_calls:
+                while (
+                    response.function_calls and function_call_count < max_function_calls
+                ):
                     function_call_count += 1
                     function_responses = self.__process_function_calls(response, tools)
                     response = chat.send_message(function_responses)
@@ -130,7 +132,9 @@ class GeminiLLMClient(BaseLLMClient):
                 function_call_count = 0
                 max_function_calls = 10
 
-                while response.function_calls and function_call_count < max_function_calls:
+                while (
+                    response.function_calls and function_call_count < max_function_calls
+                ):
                     print(f"response is {response.text}")
                     function_call_count += 1
                     function_responses = self.__process_function_calls(response, tools)

@@ -78,6 +78,20 @@ Aplicação para Acompanhamento Acadêmico.
 | Meta              | Superavit/Deficit | Progessão de Carga | Retenção/Foco    |
 | Saída de IA       | Plano de Dieta    | Periodização       | Questionários    |
 
-## Arquitetura do Projeto
+## TODO:
 
-(A ser escrita quando o Framewok for implementado)
+- [X] Criar um App separado Django só para o Framework
+- [X] Definir as Entidades Base do Framework
+- [ ] Extrair os Serviços em Comum
+  - [ ] Extrair os Serviços de Autenticação para o Framework
+  - [ ] Extrair os Serviços de Envio de Emails/Notificações para o Framework
+- [ ] Adaptar a Aplicação da Fase 1
+  - [ ] Redefinir as Entidades da Aplicação da Fase 1 para herdar dessas Entidades
+  - [ ] Utilizar o Serviço de Auth do Framework
+  - [ ] Utilizar o Serviço de Envio de Emails/Notificações do Framework
+  - [ ] Utilizar o Serviço de Geração de Conteúdo com IA do Framework
+- [ ] Refatorações Extras
+  - [ ] Criar um Repostory Base com Generics, já implementando as operações de CRUD com o Django ORM
+  - [ ] Usar o atributo `@dataclass` do Python para remover a necessidade de Explicitar construtores em Objetos que usam Injeção de Dependência
+  - [ ] Usar o Template Method nos serviços relacionados ao uso de IA, removendo os passos redundadntes entre serviços
+...
