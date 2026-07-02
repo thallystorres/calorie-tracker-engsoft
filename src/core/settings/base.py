@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "apps.accounts",
+    "apps.academia",
     "apps.profiles",
     "apps.foods",
     "apps.tracker",

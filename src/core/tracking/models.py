@@ -32,3 +32,17 @@ class BaseAIGeneratedContent(models.Model):
 
     class Meta:
         abstract = True
+
+
+class BaseGoal(models.Model):
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+    target_value = models.FloatField()
+    current_value = models.FloatField(null=True, blank=True)
+    metric_unit = models.CharField(max_length=50)
+    period_start = models.DateField()
+    period_end = models.DateField()
+    is_achieved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        abstract = True
