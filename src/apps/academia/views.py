@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from .dependencies import (
     get_tracker_service,
+    get_volume_metrics_service,
     get_workout_repository,
 )
 from .serializers import (
@@ -53,3 +54,33 @@ class WorkoutListCreateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class VolumeMetricsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        muscle_group = request.query_params.get("muscle_group")
+        if not muscle_group:
+            return Response(
+                {"detail": "Parametro muscle_group e obrigatorio."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        service = get_volume_metrics_service()
+        volume = service.get_volume_by_muscle_group(
+            user=request.user, muscle_group=muscle_group
+        )
+        return Response(
+            {"muscle_group": muscle_group, "total_volume": volume},
+            status=status.HTTP_200_OK,
+        )
+
+
+class WeeklyVolumeMetricsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        service = get_volume_metrics_service()
+        breakdown = service.get_weekly_volume_breakdown(user=request.user)
+        return Response(breakdown, status=status.HTTP_200_OK)
