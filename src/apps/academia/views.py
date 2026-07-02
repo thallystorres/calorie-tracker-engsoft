@@ -7,11 +7,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .dependencies import (
+    get_goals_service,
     get_tracker_service,
     get_volume_metrics_service,
     get_workout_repository,
 )
 from .serializers import (
+    MuscleVolumeGoalSerializer,
     WorkoutCreateSerializer,
     WorkoutSerializer,
 )
@@ -84,3 +86,29 @@ class WeeklyVolumeMetricsView(APIView):
         service = get_volume_metrics_service()
         breakdown = service.get_weekly_volume_breakdown(user=request.user)
         return Response(breakdown, status=status.HTTP_200_OK)
+
+
+class GoalsListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        service = get_goals_service()
+        goals = service.get_active_goals(user=request.user)
+        serializer = MuscleVolumeGoalSerializer(goals, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GoalsRecalculateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        service = get_goals_service()
+        goals = service.recalculate_goals(user=request.user)
+        serializer = MuscleVolumeGoalSerializer(goals, many=True)
+        return Response(
+            {
+                "detail": "Metas recalculadas com sucesso.",
+                "goals": serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )

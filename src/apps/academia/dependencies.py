@@ -1,7 +1,7 @@
 from functools import cache
 
 from .repositories import WorkoutRepository
-from .services import WorkoutTrackerService
+from .services import GoalsService, VolumeMetricsService, WorkoutTrackerService
 
 
 @cache
@@ -17,3 +17,8 @@ def get_tracker_service() -> WorkoutTrackerService:
 @cache
 def get_volume_metrics_service() -> VolumeMetricsService:
     return VolumeMetricsService(workout_repository=get_workout_repository())
+
+
+@cache
+def get_goals_service() -> GoalsService:
+    return GoalsService(workout_repository=get_workout_repository())

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Exercise, WorkoutSession, WorkoutSet
+from .models import Exercise, MuscleVolumeGoal, WorkoutSession, WorkoutSet
 
 
 class WorkoutSetInputSerializer(serializers.Serializer):
@@ -39,3 +39,19 @@ class WorkoutSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkoutSession
         fields = ("id", "name", "timestamp", "duration_minutes", "sets", "total_volume")
+
+
+class MuscleVolumeGoalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MuscleVolumeGoal
+        fields = (
+            "id",
+            "muscle_group",
+            "target_value",
+            "current_value",
+            "metric_unit",
+            "period_start",
+            "period_end",
+            "is_achieved",
+            "created_at",
+        )

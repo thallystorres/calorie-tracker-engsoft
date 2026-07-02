@@ -1,6 +1,8 @@
 from django.urls import path
 
 from .views import (
+    GoalsListView,
+    GoalsRecalculateView,
     VolumeMetricsView,
     WeeklyVolumeMetricsView,
     WorkoutListCreateView,
@@ -16,4 +18,6 @@ urlpatterns = [
         WeeklyVolumeMetricsView.as_view(),
         name="weekly-volume-metrics",
     ),
+    path("goals/", GoalsListView.as_view(), name="goals-list"),
+    path("goals/recalculate/", GoalsRecalculateView.as_view(), name="goals-recalculate"),
 ]
