@@ -3,6 +3,9 @@ from datetime import timedelta
 from django.utils import timezone
 
 from apps.academia.models import Exercise, FitnessProfile, MuscleVolumeGoal, WorkoutSession
+from apps.academia.schemas import WorkoutPlanSchema
+from apps.academia.tools import search_exercises_in_catalog
+from core.ai.services import BaseAIGeneratorService
 from core.tracking.services import BaseTrackerService
 
 
@@ -43,15 +46,15 @@ class VolumeMetricsService:
     def get_volume_by_muscle_group(self, user, muscle_group):
         return self._repo.get_volume_by_muscle_group(user=user, muscle_group=muscle_group)
 
-    def get_weekly_volume_breakdown(self, user):
+    def get_weekly_volume_breakdown(self, user, weeks=1):
         today = timezone.now().date()
-        week_ago = today - timedelta(days=7)
-        breakdown = {}
+        week_ago = today - timedelta(days=7 * weeks)
+        breakdown = []
         for key, label in Exercise.MuscleGroupsChoices.choices:
             volume = self._repo.get_volume_by_muscle_group(
                 user=user, muscle_group=key, start_date=week_ago, end_date=today
             )
-            breakdown[key] = {"label": label, "total_volume": volume}
+            breakdown.append({"exercise__muscle_group": key, "label": label, "total_volume": volume})
         return breakdown
 
 
@@ -106,3 +109,40 @@ class GoalsService:
                 goals.append(goal)
 
         return goals
+
+
+class WorkoutRoutineGeneratorService(BaseAIGeneratorService):
+    def build_context(self, user, **kwargs):
+        profile = getattr(user, "fitnessprofile", None)
+        from apps.academia.dependencies import get_volume_metrics_service
+        volume_service = get_volume_metrics_service()
+        recent_volume = volume_service.get_weekly_volume_breakdown(user, weeks=1)
+        return {
+            "profile": {
+                "experience_level": profile.experience_level if profile else "beginner",
+                "primary_goal": profile.primary_goal if profile else "hypertrophy",
+            },
+            "recent_volume": recent_volume,
+            "request": kwargs,
+        }
+
+    def get_system_prompt(self, context):
+        profile = context["profile"]
+        recent = context["recent_volume"]
+        high_volume_muscles = [r["exercise__muscle_group"] for r in recent if (r.get("total_volume") or 0) > 3000]
+        return (
+            f"Você é um treinador de elite. O usuário é nível {profile['experience_level']}. "
+            f"Objetivo: {profile['primary_goal']}. "
+            f"Evite sobrecarregar: {', '.join(high_volume_muscles)}. "
+            f"Use apenas exercícios do catálogo via search_exercises. "
+            f"Gere uma rotina completa em JSON seguindo o schema exato."
+        )
+
+    def get_tools(self):
+        return [search_exercises_in_catalog]
+
+    def get_response_schema(self):
+        return WorkoutPlanSchema
+
+    def format_response(self, raw_json, context):
+        return raw_json
