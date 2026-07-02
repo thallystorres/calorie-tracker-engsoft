@@ -3,7 +3,12 @@ from functools import cache
 from core.ai.services import GeminiLLMClient
 
 from .repositories import WorkoutRepository
-from .services import GoalsService, VolumeMetricsService, WorkoutRoutineGeneratorService, WorkoutTrackerService
+from .services import (
+    GoalsService,
+    VolumeMetricsService,
+    WorkoutRoutineGeneratorService,
+    WorkoutTrackerService,
+)
 
 
 @cache

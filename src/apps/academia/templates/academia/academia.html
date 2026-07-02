@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-slate-900">Área de Treinos</h1>
+    </div>
+
+    <!-- Volume Dashboard -->
+    <div
+      id="volume-panel"
+      class="mb-8"
+      hx-get="{% url 'academia-ui:dashboard' %}"
+      hx-trigger="load, workoutsUpdated from:body"
+      hx-target="this"
+      hx-swap="innerHTML"
+    >
+      <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
+        <p class="text-slate-500 text-sm">Carregando métricas...</p>
+      </div>
+    </div>
+
+    <!-- AI Routine Generator -->
+    <div class="bg-gradient-to-br from-slate-800 to-indigo-950 rounded-[2rem] shadow-lg border border-slate-700 p-8 mb-8 text-white relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+      <div class="relative z-10">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="bg-white/10 backdrop-blur-md p-2.5 rounded-2xl border border-white/20">
+            <span class="text-xl">🤖</span>
+          </div>
+          <h2 class="text-xl font-bold">Gerador de Rotina com IA</h2>
+        </div>
+        <p class="text-indigo-100 text-sm mb-6">
+          Escolha o tipo de divisão e a frequência semanal para gerar uma rotina personalizada.
+        </p>
+        <form id="ai-routine-form" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-indigo-100 mb-1">Divisão</label>
+              <select id="ai-split-type" class="block w-full px-4 py-3 bg-white/10 border border-white/20 focus:border-indigo-400 focus:ring-indigo-400 rounded-xl text-white">
+                <option value="full_body">Full Body</option>
+                <option value="upper_lower">Upper/Lower</option>
+                <option value="push_pull_legs">Push/Pull/Legs</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-indigo-100 mb-1">Dias por semana</label>
+              <select id="ai-days-per-week" class="block w-full px-4 py-3 bg-white/10 border border-white/20 focus:border-indigo-400 focus:ring-indigo-400 rounded-xl text-white">
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+          </div>
+          <button
+            type="submit"
+            id="ai-routine-btn"
+            class="w-full px-6 py-3 rounded-xl font-bold text-indigo-900 bg-indigo-400 hover:bg-indigo-300 transition-all flex items-center justify-center gap-2"
+          >
+            <span>Gerar Rotina</span>
+          </button>
+        </form>
+
+        <div id="ai-routine-loading" class="hidden mt-6 text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mb-3"></div>
+          <p class="text-indigo-200 text-sm animate-pulse">A IA está montando sua rotina...</p>
+        </div>
+
+        <div id="ai-routine-result" class="hidden mt-6 bg-white/10 border border-white/20 rounded-xl p-5 backdrop-blur-sm">
+          <div id="ai-routine-content" class="space-y-4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workout Registration -->
+    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mb-8">
+      <h2 class="text-xl font-bold text-slate-800 mb-6">Registrar Treino</h2>
+      <form
+        class="space-y-6"
+        id="workout-form"
+        data-endpoint="{% url 'academia:workout-list-create' %}"
+      >
+        {% csrf_token %}
+        <div id="workout-feedback"></div>
+
+        <div class="space-y-1.5">
+          <label class="text-sm font-semibold text-slate-700 ml-1">Nome do treino</label>
+          <input
+            type="text"
+            name="name"
+            placeholder="Ex.: Treino A - Peito e Costas"
+            class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+            required
+          />
+          <p class="hidden mt-1 text-xs font-medium text-red-600" data-error-for="name"></p>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-sm font-semibold text-slate-700 ml-1">Duração (min)</label>
+          <input
+            type="number"
+            name="duration_minutes"
+            min="1"
+            placeholder="Opcional"
+            class="block w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+          />
+          <p class="hidden mt-1 text-xs font-medium text-red-600" data-error-for="duration_minutes"></p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-700 ml-1">Séries</h3>
+            <button
+              type="button"
+              id="add-set-btn"
+              class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+            >
+              + Adicionar série
+            </button>
+          </div>
+
+          <div id="workout-sets" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 set-row p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <div class="space-y-1.5 sm:col-span-1">
+                <label class="text-sm font-semibold text-slate-700 ml-1">Exercício</label>
+                <div class="relative exercise-search-container">
+                  <input
+                    name="exercise_search"
+                    placeholder="Pesquise um exercício..."
+                    class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+                    required
+                    autocomplete="off"
+                  />
+                  <div class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg hidden search-results-dropdown max-h-60 overflow-y-auto"></div>
+                </div>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-sm font-semibold text-slate-700 ml-1">Reps</label>
+                <input
+                  type="number"
+                  min="1"
+                  name="reps"
+                  placeholder="Ex.: 10"
+                  class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+                  required
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-sm font-semibold text-slate-700 ml-1">Peso (kg)</label>
+                <div class="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    name="weight"
+                    placeholder="Ex.: 20.5"
+                    class="block w-full px-4 py-3 bg-white border border-slate-200 focus:ring-emerald-500 rounded-xl text-slate-900"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="remove-set-btn px-3 py-2 rounded-lg text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hidden"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full sm:w-auto px-8 py-3 mt-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all"
+        >
+          Registrar Treino
+        </button>
+      </form>
+    </div>
+
+    <!-- Workout History -->
+    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-slate-800">Histórico de Treinos</h2>
+      </div>
+      <div
+        id="history-panel"
+        hx-get="{% url 'academia-ui:history' %}"
+        hx-trigger="load, workoutsUpdated from:body"
+        hx-target="this"
+        hx-swap="innerHTML"
+      >
+        <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
+          <p class="text-slate-500 text-sm">Carregando histórico...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goals -->
+    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-slate-800">Metas de Volume</h2>
+        <button
+          class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+          hx-post="{% url 'academia:goals-recalculate' %}"
+          hx-target="#goals-panel"
+          hx-swap="innerHTML"
+        >
+          Recalcular Metas
+        </button>
+      </div>
+      <div
+        id="goals-panel"
+        hx-get="{% url 'academia-ui:goals' %}"
+        hx-trigger="load, workoutsUpdated from:body"
+        hx-target="this"
+        hx-swap="innerHTML"
+      >
+        <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
+          <p class="text-slate-500 text-sm">Carregando metas...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Exercise search with debounce
+  const exerciseCache = new Map();
+
+  function debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+  }
+
+  async function performExerciseSearch(query, dropdownEl, inputEl) {
+    if (!query || query.length < 3) {
+      dropdownEl.classList.add("hidden");
+      return;
+    }
+    try {
+      const response = await fetch(`/api/academia/exercises/?q=${encodeURIComponent(query)}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      const results = data.results || data;
+      if (!results || results.length === 0) {
+        dropdownEl.innerHTML = '<div class="p-3 text-sm text-slate-500">Nenhum exercício encontrado.</div>';
+      } else {
+        dropdownEl.innerHTML = "";
+        results.forEach(ex => {
+          const label = `${ex.name} (${ex.muscle_group})`;
+          const item = document.createElement("div");
+          item.className = "px-4 py-2 hover:bg-emerald-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-0";
+          item.textContent = label;
+          item.addEventListener("mousedown", (e) => {
+            inputEl.value = label;
+            dropdownEl.classList.add("hidden");
+            exerciseCache.set(label, { id: ex.id, muscle_group: ex.muscle_group });
+          });
+          dropdownEl.appendChild(item);
+          exerciseCache.set(label, { id: ex.id, muscle_group: ex.muscle_group });
+        });
+      }
+      dropdownEl.classList.remove("hidden");
+    } catch (error) {
+      console.error("Exercise search error:", error);
+    }
+  }
+
+  const debouncedExerciseSearch = debounce((query, dropdownEl, inputEl) => performExerciseSearch(query, dropdownEl, inputEl));
+
+  // Workout form handling
+  const workoutForm = document.getElementById("workout-form");
+  const setsContainer = document.getElementById("workout-sets");
+  const addSetBtn = document.getElementById("add-set-btn");
+  const workoutFeedback = document.getElementById("workout-feedback");
+  const setRowTemplate = setsContainer.querySelector(".set-row").cloneNode(true);
+
+  function buildSetRow(showRemove = true) {
+    const clone = setRowTemplate.cloneNode(true);
+    clone.querySelector('input[name="exercise_search"]').value = "";
+    clone.querySelector('input[name="reps"]').value = "";
+    clone.querySelector('input[name="weight"]').value = "";
+    const removeBtn = clone.querySelector(".remove-set-btn");
+    if (showRemove) removeBtn.classList.remove("hidden");
+    else removeBtn.classList.add("hidden");
+    return clone;
+  }
+
+  function toggleRemoveButtons() {
+    const rows = setsContainer.querySelectorAll(".set-row");
+    rows.forEach((row, index) => {
+      const btn = row.querySelector(".remove-set-btn");
+      if (rows.length === 1 && index === 0) btn.classList.add("hidden");
+      else btn.classList.remove("hidden");
+    });
+  }
+
+  addSetBtn.addEventListener("click", () => {
+    setsContainer.appendChild(buildSetRow(true));
+    toggleRemoveButtons();
+  });
+
+  setsContainer.addEventListener("click", (evt) => {
+    const removeBtn = evt.target.closest(".remove-set-btn");
+    if (!removeBtn) return;
+    const row = removeBtn.closest(".set-row");
+    if (row) row.remove();
+    toggleRemoveButtons();
+  });
+
+  setsContainer.addEventListener("input", (evt) => {
+    const target = evt.target;
+    if (target && target.name === "exercise_search") {
+      const row = target.closest(".set-row");
+      const dropdown = row.querySelector(".search-results-dropdown");
+      const query = target.value;
+      if (!exerciseCache.has(query)) {
+        debouncedExerciseSearch(query, dropdown, target);
+      } else {
+        dropdown.classList.add("hidden");
+      }
+    }
+  });
+
+  setsContainer.addEventListener("focusin", (evt) => {
+    const target = evt.target;
+    if (target && target.name === "exercise_search") {
+      const row = target.closest(".set-row");
+      const dropdown = row.querySelector(".search-results-dropdown");
+      if (target.value.length >= 3 && dropdown.children.length > 0) {
+        dropdown.classList.remove("hidden");
+      }
+    }
+  });
+
+  setsContainer.addEventListener("focusout", (evt) => {
+    const target = evt.target;
+    if (target && target.name === "exercise_search") {
+      const row = target.closest(".set-row");
+      const dropdown = row.querySelector(".search-results-dropdown");
+      setTimeout(() => dropdown.classList.add("hidden"), 200);
+    }
+  });
+
+  document.addEventListener("click", (evt) => {
+    if (!evt.target.closest(".exercise-search-container")) {
+      document.querySelectorAll(".search-results-dropdown").forEach(d => d.classList.add("hidden"));
+    }
+  });
+
+  toggleRemoveButtons();
+
+  // Submit workout
+  workoutForm.addEventListener("submit", async (evt) => {
+    evt.preventDefault();
+    workoutFeedback.innerHTML = "";
+    const submitButton = workoutForm.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.classList.add("opacity-70", "cursor-not-allowed");
+    }
+
+    const name = workoutForm.querySelector('input[name="name"]').value;
+    const duration = workoutForm.querySelector('input[name="duration_minutes"]').value;
+    const rows = setsContainer.querySelectorAll(".set-row");
+
+    const sets = Array.from(rows).map((row) => {
+      const inputValue = row.querySelector('input[name="exercise_search"]').value;
+      const cached = exerciseCache.get(inputValue);
+      return {
+        exercise_id: cached ? cached.id : null,
+        reps: row.querySelector('input[name="reps"]').value,
+        weight: row.querySelector('input[name="weight"]').value,
+      };
+    });
+
+    if (!name || sets.some((s) => !s.exercise_id || !s.reps || !s.weight)) {
+      workoutFeedback.innerHTML = '<div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm font-medium mb-4">Preencha o nome do treino e selecione exercícios válidos com reps e peso.</div>';
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.classList.remove("opacity-70", "cursor-not-allowed");
+      }
+      return;
+    }
+
+    const csrfToken = workoutForm.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+    try {
+      const response = await fetch(workoutForm.dataset.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        body: JSON.stringify({
+          name,
+          duration_minutes: duration ? parseInt(duration, 10) : null,
+          sets,
+        }),
+      });
+
+      let payload = {};
+      try { payload = await response.json(); } catch (err) { payload = {}; }
+
+      if (response.status === 201) {
+        let messageHtml = `<div class="bg-emerald-50 text-emerald-700 p-4 rounded-xl border border-emerald-200 text-sm font-medium mb-4">${payload.detail || "Treino registrado com sucesso."}</div>`;
+        if (payload.warnings && payload.warnings.length > 0) {
+          messageHtml += `<div class="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 text-sm font-medium mb-4"><span class="font-bold flex items-center mb-1">Atenção:</span>${payload.warnings.join("<br>")}</div>`;
+        }
+        workoutFeedback.innerHTML = messageHtml;
+        workoutForm.reset();
+        setsContainer.innerHTML = "";
+        setsContainer.appendChild(buildSetRow(false));
+        toggleRemoveButtons();
+        if (window.htmx) {
+          window.htmx.trigger(document.body, "workoutsUpdated");
+        }
+      } else {
+        const errorText = payload?.detail || "Não foi possível registrar o treino.";
+        workoutFeedback.innerHTML = `<div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm font-medium mb-4">${errorText}</div>`;
+      }
+    } catch (error) {
+      workoutFeedback.innerHTML = '<div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm font-medium mb-4">Erro de conexão com o servidor. Tente novamente.</div>';
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.classList.remove("opacity-70", "cursor-not-allowed");
+      }
+    }
+  });
+
+  // AI Routine Generator
+  const aiRoutineForm = document.getElementById("ai-routine-form");
+  const aiRoutineBtn = document.getElementById("ai-routine-btn");
+  const aiRoutineLoading = document.getElementById("ai-routine-loading");
+  const aiRoutineResult = document.getElementById("ai-routine-result");
+  const aiRoutineContent = document.getElementById("ai-routine-content");
+
+  aiRoutineForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    aiRoutineResult.classList.add("hidden");
+    aiRoutineLoading.classList.remove("hidden");
+    aiRoutineBtn.disabled = true;
+    aiRoutineBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+    const splitType = document.getElementById("ai-split-type").value;
+    const daysPerWeek = document.getElementById("ai-days-per-week").value;
+    const csrfToken = workoutForm.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+    try {
+      const response = await fetch("/api/academia/ai/generate-routine/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        body: JSON.stringify({ split_type: splitType, days_per_week: parseInt(daysPerWeek, 10) }),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        aiRoutineContent.innerHTML = "";
+        const days = data.days || data.plan || [];
+        if (Array.isArray(days)) {
+          days.forEach((day, idx) => {
+            let html = `<div class="border-b border-white/10 last:border-0 pb-4 last:pb-0"><h3 class="font-bold text-indigo-100 mb-2">Dia ${idx + 1}: ${day.name || 'Treino'}</h3><div class="space-y-2">`;
+            (day.exercises || []).forEach(ex => {
+              html += `<div class="flex justify-between items-center py-1 text-sm"><span class="text-indigo-50">${ex.name}</span><span class="text-indigo-200 font-medium">${ex.sets || '—'} séries × ${ex.reps || '—'} reps</span></div>`;
+            });
+            html += "</div></div>";
+            aiRoutineContent.innerHTML += html;
+          });
+        } else {
+          aiRoutineContent.innerHTML = `<pre class="text-sm text-indigo-100 whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        aiRoutineLoading.classList.add("hidden");
+        aiRoutineResult.classList.remove("hidden");
+      } else {
+        alert(data.detail || "Erro ao gerar rotina.");
+        aiRoutineLoading.classList.add("hidden");
+      }
+    } catch (error) {
+      alert("Erro de conexão. Tente novamente.");
+      aiRoutineLoading.classList.add("hidden");
+    } finally {
+      aiRoutineBtn.disabled = false;
+      aiRoutineBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+  });
+</script>
+{% endblock %}
