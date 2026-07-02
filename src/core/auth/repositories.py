@@ -18,6 +18,9 @@ class BaseUserRepository(BaseRepository[User]):
             qs = qs.exclude(id=user_id)
         return qs.exists()
 
+    def get_by_user_id(self, user_id: int) -> User | None:
+        return self.model.objects.filter(id=user_id).first()
+
     def get_by_username(self, username: str) -> User | None:
         return self.model.objects.filter(username=username).first()
 

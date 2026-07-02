@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+
 from core.profiles.models import BaseProfile
 from core.tracking.models import BaseAIGeneratedContent
 
@@ -25,16 +26,24 @@ class NutritionalProfile(BaseProfile):
         User, on_delete=models.CASCADE, related_name="nutritional_profile"
     )
 
-    weight_kg = models.DecimalField(max_digits=5, decimal_places=2)
-    height_cm = models.PositiveIntegerField()
-    age = models.PositiveIntegerField()
+    weight_kg = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    height_cm = models.PositiveIntegerField(null=True, blank=True)
+    age = models.PositiveIntegerField(null=True, blank=True)
 
     dietary_restrictions = models.JSONField(default=list, blank=True)
-    sex = models.CharField(max_length=1, choices=SexChoices.choices)
-    activity_level = models.CharField(
-        max_length=15, choices=ActivityLevelChoices.choices
+    sex = models.CharField(
+        max_length=1, choices=SexChoices.choices, default=SexChoices.FEMALE
     )
-    goal = models.CharField(max_length=15, choices=GoalChoices.choices)
+    activity_level = models.CharField(
+        max_length=15,
+        choices=ActivityLevelChoices.choices,
+        default=ActivityLevelChoices.SEDENTARY,
+    )
+    goal = models.CharField(
+        max_length=15, choices=GoalChoices.choices, default=GoalChoices.MAINTAIN
+    )
     bmr = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     daily_calorie_target = models.DecimalField(
         max_digits=7, decimal_places=2, null=True, blank=True

@@ -122,21 +122,29 @@ class Command(BaseCommand):
 
                     time.sleep(1)
 
-                except (ConnectionError, TimeoutError, openfoodfacts.APIError) as e:
+                except (ConnectionError, TimeoutError) as e:
                     logger.warning(
                         "Falha de rede na importacao termo=%s pagina=%s: %s",
-                        termo, pagina, e,
+                        termo,
+                        pagina,
+                        e,
                     )
                     self.stdout.write(
-                        self.style.WARNING(f"Erro de rede na página {pagina} de '{termo}': {e}")
+                        self.style.WARNING(
+                            f"Erro de rede na página {pagina} de '{termo}': {e}"
+                        )
                     )
                     break
                 except Exception as e:
                     logger.exception(
-                        "Erro inesperado na importacao termo=%s pagina=%s", termo, pagina,
+                        "Erro inesperado na importacao termo=%s pagina=%s",
+                        termo,
+                        pagina,
                     )
                     self.stdout.write(
-                        self.style.ERROR(f"Erro inesperado na página {pagina} de '{termo}': {e}")
+                        self.style.ERROR(
+                            f"Erro inesperado na página {pagina} de '{termo}': {e}"
+                        )
                     )
                     break
 
