@@ -8,11 +8,13 @@ from rest_framework.views import APIView
 
 from .dependencies import (
     get_goals_service,
+    get_routine_generator_service,
     get_tracker_service,
     get_volume_metrics_service,
     get_workout_repository,
 )
 from .serializers import (
+    GenerateRoutineRequestSerializer,
     MuscleVolumeGoalSerializer,
     WorkoutCreateSerializer,
     WorkoutSerializer,
@@ -112,3 +114,19 @@ class GoalsRecalculateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class GenerateRoutineView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        serializer = GenerateRoutineRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = get_routine_generator_service()
+        plan = service.generate(
+            user=request.user,
+            user_prompt=f"Crie uma rotina {serializer.validated_data.get('split_type')} para {serializer.validated_data.get('days_per_week')} dias",
+            split_type=serializer.validated_data.get("split_type"),
+            days_per_week=serializer.validated_data.get("days_per_week"),
+        )
+        return Response(plan, status=status.HTTP_200_OK)

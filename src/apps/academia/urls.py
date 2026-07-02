@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    GenerateRoutineView,
     GoalsListView,
     GoalsRecalculateView,
     VolumeMetricsView,
@@ -20,4 +21,5 @@ urlpatterns = [
     ),
     path("goals/", GoalsListView.as_view(), name="goals-list"),
     path("goals/recalculate/", GoalsRecalculateView.as_view(), name="goals-recalculate"),
+    path("ai/generate-routine/", GenerateRoutineView.as_view(), name="generate-routine"),
 ]
