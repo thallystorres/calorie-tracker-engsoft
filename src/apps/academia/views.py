@@ -13,7 +13,9 @@ from .dependencies import (
     get_volume_metrics_service,
     get_workout_repository,
 )
+from .models import Exercise
 from .serializers import (
+    ExerciseSerializer,
     GenerateRoutineRequestSerializer,
     MuscleVolumeGoalSerializer,
     WorkoutCreateSerializer,
@@ -130,3 +132,25 @@ class GenerateRoutineView(APIView):
             days_per_week=serializer.validated_data.get("days_per_week"),
         )
         return Response(plan, status=status.HTTP_200_OK)
+
+
+class ExerciseListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        repo = get_workout_repository()
+        query = request.query_params.get("q")
+        if query:
+            from core.ai.services import GeminiLLMClient
+            client = GeminiLLMClient()
+            try:
+                embedding = client.get_embedding(query, task_type="search_query")
+                exercises = repo.search_exercises_semantic(embedding, limit=20)
+            except Exception:
+                exercises = Exercise.objects.filter(name__icontains=query)[:20]
+        else:
+            exercises = Exercise.objects.all().order_by("name")
+        paginator = PageNumberPagination()
+        page = paginator.paginate_queryset(exercises, request, view=self)
+        serializer = ExerciseSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)

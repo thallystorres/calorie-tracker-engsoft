@@ -60,3 +60,9 @@ class MuscleVolumeGoalSerializer(serializers.ModelSerializer):
 class GenerateRoutineRequestSerializer(serializers.Serializer):
     split_type = serializers.CharField(max_length=50, required=False, default="full_body")
     days_per_week = serializers.IntegerField(min_value=1, max_value=7, required=False, default=3)
+
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = ("id", "name", "muscle_group", "description")
