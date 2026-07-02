@@ -2,7 +2,12 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.academia.models import Exercise, FitnessProfile, MuscleVolumeGoal, WorkoutSession
+from apps.academia.models import (
+    Exercise,
+    FitnessProfile,
+    MuscleVolumeGoal,
+    WorkoutSession,
+)
 from apps.academia.schemas import WorkoutPlanSchema
 from apps.academia.tools import search_exercises_in_catalog
 from core.ai.services import BaseAIGeneratorService
@@ -70,16 +75,31 @@ class GoalsService:
 
     def get_active_goals(self, user):
         today = timezone.now().date()
-        return MuscleVolumeGoal.objects.filter(
-            user=user, is_achieved=False, period_end__gte=today
-        ).order_by("-created_at")
+        goals = list(
+            MuscleVolumeGoal.objects.filter(user=user, period_end__gte=today).order_by(
+                "-created_at"
+            )
+        )
+        for goal in goals:
+            current_value = self._repo.get_volume_by_muscle_group(
+                user=user,
+                muscle_group=goal.muscle_group,
+                start_date=goal.period_start,
+                end_date=goal.period_end,
+            )
+            is_achieved = goal.target_value > 0 and current_value >= goal.target_value
+            if goal.current_value != current_value or goal.is_achieved != is_achieved:
+                goal.current_value = current_value
+                goal.is_achieved = is_achieved
+                goal.save(update_fields=["current_value", "is_achieved"])
+        return goals
 
     def recalculate_goals(self, user):
         today = timezone.now().date()
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
-        next_week_start = week_end + timedelta(days=1)
-        next_week_end = next_week_start + timedelta(days=6)
+        previous_week_start = week_start - timedelta(days=7)
+        previous_week_end = week_start - timedelta(days=1)
 
         try:
             profile = FitnessProfile.objects.get(user=user)
@@ -89,24 +109,52 @@ class GoalsService:
 
         goals = []
         for key, _label in Exercise.MuscleGroupsChoices.choices:
-            volume = self._repo.get_volume_by_muscle_group(
+            baseline_volume = self._repo.get_volume_by_muscle_group(
+                user=user,
+                muscle_group=key,
+                start_date=previous_week_start,
+                end_date=previous_week_end,
+            )
+            current_volume = self._repo.get_volume_by_muscle_group(
                 user=user, muscle_group=key, start_date=week_start, end_date=week_end
             )
-            if volume > 0:
-                target = round(volume * increment, 2)
+            existing_goal = MuscleVolumeGoal.objects.filter(
+                user=user,
+                muscle_group=key,
+                period_start=week_start,
+                period_end=week_end,
+            ).first()
+
+            if baseline_volume > 0:
+                target = round(baseline_volume * increment, 2)
+            elif existing_goal:
+                target = existing_goal.target_value
+            elif current_volume > 0:
+                target = round(current_volume * increment, 2)
+            else:
+                continue
+
+            is_achieved = target > 0 and current_volume >= target
+            goal_defaults = {
+                "target_value": target,
+                "current_value": current_volume,
+                "metric_unit": "kg*rep",
+                "is_achieved": is_achieved,
+            }
+            if existing_goal:
+                for field, value in goal_defaults.items():
+                    setattr(existing_goal, field, value)
+                existing_goal.save(update_fields=list(goal_defaults.keys()))
+                goal = existing_goal
+            else:
                 goal, _created = MuscleVolumeGoal.objects.update_or_create(
                     user=user,
                     muscle_group=key,
-                    period_start=next_week_start,
-                    period_end=next_week_end,
-                    defaults={
-                        "target_value": target,
-                        "current_value": 0.0,
-                        "metric_unit": "kg*rep",
-                        "is_achieved": False,
-                    },
+                    period_start=week_start,
+                    period_end=week_end,
+                    defaults=goal_defaults,
                 )
-                goals.append(goal)
+            goals.append(goal)
 
         return goals
 

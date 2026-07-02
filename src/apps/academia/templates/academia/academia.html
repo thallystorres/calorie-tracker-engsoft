@@ -203,7 +203,7 @@
         <h2 class="text-xl font-bold text-slate-800">Metas de Volume</h2>
         <button
           class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
-          hx-post="{% url 'academia:goals-recalculate' %}"
+          hx-post="{% url 'academia-ui:goals-recalculate' %}"
           hx-target="#goals-panel"
           hx-swap="innerHTML"
         >
@@ -441,6 +441,28 @@
   const aiRoutineResult = document.getElementById("ai-routine-result");
   const aiRoutineContent = document.getElementById("ai-routine-content");
 
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value == null ? "" : String(value);
+    return div.innerHTML;
+  }
+
+  function formatRecommendedSets(sets, fallbackReps) {
+    if (Array.isArray(sets)) {
+      if (sets.length === 0) return "—";
+      const reps = sets.map((set) => set.reps || "—");
+      const uniqueReps = Array.from(new Set(reps));
+      if (uniqueReps.length === 1) {
+        return `${sets.length} séries × ${uniqueReps[0]} reps`;
+      }
+      return `${sets.length} séries (${reps.map((rep, idx) => `${idx + 1}ª: ${rep} reps`).join(", ")})`;
+    }
+    if (sets && fallbackReps) return `${sets} séries × ${fallbackReps} reps`;
+    if (sets) return `${sets} séries`;
+    if (fallbackReps) return `${fallbackReps} reps`;
+    return "—";
+  }
+
   aiRoutineForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     aiRoutineResult.classList.add("hidden");
@@ -468,9 +490,10 @@
         const days = data.days || data.plan || [];
         if (Array.isArray(days)) {
           days.forEach((day, idx) => {
-            let html = `<div class="border-b border-white/10 last:border-0 pb-4 last:pb-0"><h3 class="font-bold text-indigo-100 mb-2">Dia ${idx + 1}: ${day.name || 'Treino'}</h3><div class="space-y-2">`;
+            const dayName = escapeHtml(day.day_name || day.name || "Treino");
+            let html = `<div class="border-b border-white/10 last:border-0 pb-4 last:pb-0"><h3 class="font-bold text-indigo-100 mb-2">Dia ${idx + 1}: ${dayName}</h3><div class="space-y-2">`;
             (day.exercises || []).forEach(ex => {
-              html += `<div class="flex justify-between items-center py-1 text-sm"><span class="text-indigo-50">${ex.name}</span><span class="text-indigo-200 font-medium">${ex.sets || '—'} séries × ${ex.reps || '—'} reps</span></div>`;
+              html += `<div class="flex justify-between items-center py-1 text-sm"><span class="text-indigo-50">${escapeHtml(ex.name)}</span><span class="text-indigo-200 font-medium">${escapeHtml(formatRecommendedSets(ex.sets, ex.reps))}</span></div>`;
             });
             html += "</div></div>";
             aiRoutineContent.innerHTML += html;

@@ -9,4 +9,9 @@ urlpatterns = [
     path("dashboard/", ui_views.volume_dashboard_partial, name="dashboard"),
     path("history/", ui_views.workout_history_partial, name="history"),
     path("goals/", ui_views.goals_partial, name="goals"),
+    path(
+        "goals/recalculate/",
+        ui_views.goals_recalculate_partial,
+        name="goals-recalculate",
+    ),
 ]
