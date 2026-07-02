@@ -1,5 +1,4 @@
-from apps.smarttracker_fw.auth.services import BaseUserService
-
+from core.auth.services import BaseUserService
 
 class UserService(BaseUserService):
     pass

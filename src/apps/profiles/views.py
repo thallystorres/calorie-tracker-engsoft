@@ -113,8 +113,9 @@ class FoodRestrictionListCreateView(APIView):
     def get(self, request: Request) -> Response:
         profile = get_profile_or_404(request.user)
 
-        restrictions = get_food_restriction_repository().search_profile(profile)
+        restrictions = profile.restriction_items.all()
         serializer = FoodRestrictionSerializer(restrictions, many=True)
+
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

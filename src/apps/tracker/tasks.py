@@ -6,7 +6,7 @@ from celery import shared_task
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from apps.accounts.services import ExcessEmailService, ReminderEmailService
+from core.notifications.services import ExcessEmailService, ReminderEmailService
 from apps.tracker.models import Meal
 from apps.tracker.repositories import MealRepository
 

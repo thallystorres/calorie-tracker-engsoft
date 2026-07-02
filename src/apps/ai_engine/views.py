@@ -15,7 +15,8 @@ from rest_framework.views import APIView
 
 from apps.profiles.dependencies import get_profile_repository
 from apps.profiles.models import SavedDiet, SavedRecipe, WeeklyPlan
-from apps.smarttracker_fw.core.exceptions import LLMRequestError, LLMResponseError
+from core.exceptions import LLMRequestError, LLMResponseError
+
 
 from .dependencies import (
     get_diet_assistant_service,

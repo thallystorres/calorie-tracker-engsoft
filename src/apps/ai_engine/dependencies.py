@@ -1,7 +1,6 @@
 from functools import cache
 
-from apps.smarttracker_fw.ai.services import GeminiLLMClient
-
+from core.ai_engine.clients.gemini import GeminiLLMClient
 from .services import (
     DietAssistantService,
     MealSuggesterService,
@@ -9,26 +8,21 @@ from .services import (
     WeeklyPlannerService,
 )
 
-
 @cache
 def get_gemini_client() -> GeminiLLMClient:
     return GeminiLLMClient()
-
 
 @cache
 def get_diet_assistant_service() -> DietAssistantService:
     return DietAssistantService(get_gemini_client())
 
-
 @cache
 def get_weekly_planner_service() -> WeeklyPlannerService:
     return WeeklyPlannerService(get_gemini_client())
 
-
 @cache
 def get_meal_suggester_service() -> MealSuggesterService:
     return MealSuggesterService(get_gemini_client())
-
 
 @cache
 def get_shopping_list_service() -> ShoppingListService:

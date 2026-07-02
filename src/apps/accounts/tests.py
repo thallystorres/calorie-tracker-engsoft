@@ -9,8 +9,7 @@ from django.urls import reverse
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.test import APIClient
 
-from .repositories import UserRepository
-from .serializers import (
+from core.auth.serializers import (
     AccountDeleteSerializer,
     AccountLoginSerializer,
     AccountRegisterSerializer,
@@ -18,13 +17,16 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
 )
-from .services import (
-    ActivationEmailService,
+from core.auth.services import (
     ActivationTokenService,
-    PasswordResetEmailService,
     PasswordResetTokenService,
-    UserService,
 )
+from core.notifications.services import (
+    ActivationEmailService,
+    PasswordResetEmailService,
+)
+from .repositories import UserRepository
+from .services import UserService
 
 
 def create_user(

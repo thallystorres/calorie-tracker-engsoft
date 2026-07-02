@@ -2,7 +2,7 @@ from typing import Any
 
 from django.contrib.auth.models import User
 
-from apps.smarttracker_fw.core.repositories import BaseRepository
+from core.repositories import BaseRepository
 
 
 class BaseUserRepository(BaseRepository[User]):

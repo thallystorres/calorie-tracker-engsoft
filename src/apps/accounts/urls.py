@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.smarttracker_fw.auth.views import (
+from core.auth.views import (
     AccountActivateView,
     AccountLoginView,
     AccountLogoutView,

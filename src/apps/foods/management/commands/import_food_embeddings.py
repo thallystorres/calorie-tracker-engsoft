@@ -15,7 +15,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         input_file = options["input"]
-        
+
         try:
             with open(input_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -31,28 +31,28 @@ class Command(BaseCommand):
 
         updated_count = 0
         not_found_count = 0
-        
+
         # Para otimizar, podemos carregar os alimentos em um dicionário para busca rápida
         # Mas se a base for muito grande, talvez seja melhor fazer por lotes.
         # Vamos assumir que cabe na memória por enquanto (alguns milhares de itens).
-        
+
         for item in data:
             name = item.get("name")
             source = item.get("source")
             fdc_id = item.get("outsource_fdc_id")
             embedding = item.get("embedding")
-            
+
             if not embedding:
                 continue
-                
+
             # Tenta encontrar o alimento
             filters = {"name": name, "source": source}
             if fdc_id is not None:
                 filters["outsource_fdc_id"] = fdc_id
-            
+
             # Usamos filter().first() para evitar erros se houver duplicados no banco
             food = Food.objects.filter(**filters).first()
-            
+
             if food:
                 food.embedding = embedding
                 food.save(update_fields=["embedding"])

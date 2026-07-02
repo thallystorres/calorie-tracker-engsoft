@@ -44,52 +44,52 @@ class NotificationTasksTests(TestCase):
         )
 
     def test_send_reminder_emails_sends_when_interval_exceeded(self):
-        now = timezone.now().replace(hour=10, minute=0, second=0, microsecond=0)
+      now = timezone.now().replace(hour=10, minute=0, second=0, microsecond=0)
 
-        meal = Meal.objects.create(user=self.user, label=Meal.MealLabel.ALMOCO)
-        Meal.objects.filter(pk=meal.pk).update(eaten_at=now - timedelta(hours=4))
+      meal = Meal.objects.create(user=self.user, label=Meal.MealLabel.ALMOCO)
+      Meal.objects.filter(pk=meal.pk).update(eaten_at=now - timedelta(hours=4))
 
-        with (
-            patch("django.utils.timezone.now", return_value=now),
-            patch("django.utils.timezone.localtime", return_value=now),
-            patch(
-                "apps.accounts.services.ReminderEmailService.send_email"
-            ) as send_mock,
-        ):
-            sent = send_reminder_emails()
+      with (
+        patch("django.utils.timezone.now", return_value=now),
+        patch("django.utils.timezone.localtime", return_value=now),
+        patch(
+          "core.notifications.services.ReminderEmailService.send_email"
+        ) as send_mock,
+      ):
+        sent = send_reminder_emails()
 
-        self.assertEqual(sent, 1)
-        self.assertTrue(send_mock.called)
+      self.assertEqual(sent, 1)
+      self.assertTrue(send_mock.called)
 
     def test_send_reminder_emails_skips_outside_window(self):
-        now = timezone.now().replace(hour=23, minute=0, second=0, microsecond=0)
-        meal = Meal.objects.create(user=self.user, label=Meal.MealLabel.ALMOCO)
-        Meal.objects.filter(pk=meal.pk).update(eaten_at=now - timedelta(hours=4))
+      now = timezone.now().replace(hour=23, minute=0, second=0, microsecond=0)
+      meal = Meal.objects.create(user=self.user, label=Meal.MealLabel.ALMOCO)
+      Meal.objects.filter(pk=meal.pk).update(eaten_at=now - timedelta(hours=4))
 
-        with (
-            patch("django.utils.timezone.now", return_value=now),
-            patch("django.utils.timezone.localtime", return_value=now),
-            patch(
-                "apps.accounts.services.ReminderEmailService.send_email"
-            ) as send_mock,
-        ):
-            sent = send_reminder_emails()
+      with (
+        patch("django.utils.timezone.now", return_value=now),
+        patch("django.utils.timezone.localtime", return_value=now),
+        patch(
+          "core.notifications.services.ReminderEmailService.send_email"
+        ) as send_mock,
+      ):
+        sent = send_reminder_emails()
 
-        self.assertEqual(sent, 0)
-        self.assertFalse(send_mock.called)
+      self.assertEqual(sent, 0)
+      self.assertFalse(send_mock.called)
 
     def test_send_excess_emails_sends_when_target_reached(self):
-        now = timezone.now().replace(hour=12, minute=0, second=0, microsecond=0)
-        food = self._create_food()
+      now = timezone.now().replace(hour=12, minute=0, second=0, microsecond=0)
+      food = self._create_food()
 
-        meal = Meal.objects.create(user=self.user, label=Meal.MealLabel.ALMOCO)
-        MealItem.objects.create(meal=meal, food=food, quantity_grams=Decimal("200"))
+      meal = Meal.objects.create(user=self.user, label=Meal.MealLabel.ALMOCO)
+      MealItem.objects.create(meal=meal, food=food, quantity_grams=Decimal("200"))
 
-        with (
-            patch("django.utils.timezone.now", return_value=now),
-            patch("apps.accounts.services.ExcessEmailService.send_email") as send_mock,
-        ):
-            sent = send_excess_emails()
+      with (
+        patch("django.utils.timezone.now", return_value=now),
+        patch("core.notifications.services.ExcessEmailService.send_email") as send_mock,
+      ):
+        sent = send_excess_emails()
 
-        self.assertEqual(sent, 1)
-        self.assertTrue(send_mock.called)
+      self.assertEqual(sent, 1)
+      self.assertTrue(send_mock.called)

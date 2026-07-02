@@ -6,25 +6,27 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.smarttracker_fw.auth.dependencies import (
-    get_base_user_repository,
-    get_base_user_service,
+from .dependencies import get_base_user_repository, get_base_user_service
+from .serializers import (
+    AccountDeleteSerializer,
+    AccountLoginSerializer,
+    AccountRegisterSerializer,
+    AccountSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
 )
-
 
 class IsNotAuthenticated(permissions.BasePermission):
     def has_permission(self, request, view):  # type: ignore
         return not request.user.is_authenticated
 
-
-# Create your views here.
 class AccountRegisterView(APIView):
     permission_classes = [IsNotAuthenticated]
 
     def post(self, request: Request) -> Response:
-        service = get_user_service()
+        service = get_base_user_service()
         serializer = AccountRegisterSerializer(
-            data=request.data, user_repository=get_user_repository()
+            data=request.data, user_repository=get_base_user_repository()
         )
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
@@ -39,7 +41,6 @@ class AccountRegisterView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
-
 
 class AccountMeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -83,7 +84,7 @@ class AccountMeView(APIView):
         )
 
     def delete(self, request: Request) -> Response:
-        service = get_user_service()
+        service = get_base_user_service()
         serializer = AccountDeleteSerializer(
             data=request.data, context={"request": request}
         )
@@ -92,13 +93,12 @@ class AccountMeView(APIView):
         logout(request)  # type:ignore
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
 class AccountLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request: Request) -> Response:
         serializer = AccountLoginSerializer(
-            data=request.data, user_service=get_user_service()
+            data=request.data, user_service=get_base_user_service()
         )
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
@@ -110,7 +110,6 @@ class AccountLoginView(APIView):
             {"detail": "Login realizado com sucesso."}, status=status.HTTP_200_OK
         )
 
-
 class AccountLogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -119,7 +118,6 @@ class AccountLogoutView(APIView):
         return Response(
             {"detail": "Logout realizado com sucesso."}, status=status.HTTP_200_OK
         )
-
 
 class AccountActivateView(APIView):
     permission_classes = [IsNotAuthenticated]
@@ -133,7 +131,7 @@ class AccountActivateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        service = get_user_service()
+        service = get_base_user_service()
         service.activate_account(token)
 
         return Response(
@@ -141,12 +139,11 @@ class AccountActivateView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
 class PasswordResetRequestView(APIView):
     permission_classes = [IsNotAuthenticated]
 
     def post(self, request: Request) -> Response:
-        service = get_user_service()
+        service = get_base_user_service()
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = cast("dict[str, Any]", serializer.validated_data)
@@ -160,7 +157,6 @@ class PasswordResetRequestView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [IsNotAuthenticated]

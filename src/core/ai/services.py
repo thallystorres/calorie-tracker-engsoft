@@ -10,7 +10,7 @@ from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse, Part
 from pydantic import TypeAdapter, ValidationError
 
-from apps.smarttracker_fw.core.exceptions import (
+from core.apps import (
     LLMAPIKeyNotSetError,
     LLMAttemptsExhaustedError,
     LLMRequestError,

@@ -1,13 +1,11 @@
 from datetime import timedelta
-
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
 
 from apps.profiles.dependencies import get_profile_service
-from apps.smarttracker_fw.core.exceptions import ProfileRequiredError
+from core.exceptions import ProfileRequiredError
 from apps.tracker.dependencies import get_meal_repository
-
 
 class ContextBuilder:
     def __init__(self, user: User | None = None):

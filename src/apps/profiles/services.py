@@ -1,10 +1,9 @@
 from decimal import Decimal
-
 from django.contrib.auth.models import User
 from rest_framework.exceptions import NotFound
 
-from apps.smarttracker_fw.core.exceptions import InvalidProfileDataError
-from apps.smarttracker_fw.profiles.services import BaseProfileService
+from core.exceptions import InvalidProfileDataError
+from core.profiles.services import BaseProfileService
 
 from .models import FoodRestriction, NutritionalProfile
 from .repositories import NutritionalProfileRepository

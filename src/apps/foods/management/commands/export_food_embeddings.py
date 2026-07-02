@@ -15,11 +15,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         output_file = options["output"]
-        
+
         foods = Food.objects.filter(embedding__isnull=False).only(
             "name", "source", "outsource_fdc_id", "embedding"
         )
-        
+
         total = foods.count()
         if total == 0:
             self.stdout.write(self.style.WARNING("Nenhum alimento com embedding encontrado para exportar."))
@@ -33,7 +33,7 @@ class Command(BaseCommand):
             if food.embedding is not None:
                 # Convert to standard Python floats to avoid JSON serialization errors with float32
                 embedding_list = [float(x) for x in food.embedding]
-            
+
             data.append({
                 "name": food.name,
                 "source": food.source,

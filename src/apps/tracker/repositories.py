@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models import DecimalField, ExpressionWrapper, F, QuerySet, Sum
 from django.db.models.functions import TruncDate
 
-from apps.smarttracker_fw.tracking.repositories import BaseTrackerRepository
+from core.tracking.repositories import BaseTrackerRepository
 
 from .models import Meal, MealItem
 

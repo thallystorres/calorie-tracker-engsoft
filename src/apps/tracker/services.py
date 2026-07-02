@@ -1,11 +1,8 @@
 from django.contrib.auth.models import User
 
-from apps.foods.allergens import (
-    normalize_food_allergens,
-    normalize_profile_restrictions,
-)
+from apps.foods.allergens import normalize_food_allergens, normalize_profile_restrictions
 from apps.profiles.dependencies import get_profile_service
-from apps.smarttracker_fw.tracking.services import BaseTrackerService
+from core.tracking.services import BaseTrackerService
 
 from .repositories import MealRepository
 

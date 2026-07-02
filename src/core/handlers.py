@@ -7,7 +7,7 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
-from apps.smarttracker_fw.core.exceptions import AppError
+from core.exceptions import AppError
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse

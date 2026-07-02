@@ -9,8 +9,8 @@ from django.core.exceptions import ValidationError
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from rest_framework.exceptions import AuthenticationFailed
 
-from apps.smarttracker_fw.core.exceptions import EmailSendError
-from apps.smarttracker_fw.notifications.services import BaseEmailService
+from core.exceptions import EmailSendError
+from core.notifications.services import BaseEmailService
 
 from .repositories import BaseUserRepository
 

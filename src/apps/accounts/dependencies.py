@@ -1,6 +1,6 @@
 from functools import cache
 
-from apps.smarttracker_fw.auth.dependencies import get_base_user_service
+from core.auth.dependencies import get_base_user_service
 
 from .repositories import UserRepository
 from .services import (
