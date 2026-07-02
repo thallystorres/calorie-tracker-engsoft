@@ -10,7 +10,7 @@ from google import genai
 from google.genai.types import GenerateContentConfig, GenerateContentResponse, Part
 from pydantic import TypeAdapter, ValidationError
 
-from core.apps import (
+from core.exceptions import (
     LLMAPIKeyNotSetError,
     LLMAttemptsExhaustedError,
     LLMRequestError,
