@@ -7,8 +7,8 @@ from core.tracking.services import BaseTrackerService
 
 
 class WorkoutTrackerService(BaseTrackerService):
-    def __init__(self, work_out_repository):
-        super().__init__(repository=work_out_repository)
+    def __init__(self, workout_repository):
+        super().__init__(repository=workout_repository)
 
     def validate_event_against_profile(self, user, items_data):
         warnings = []
@@ -23,9 +23,12 @@ class WorkoutTrackerService(BaseTrackerService):
             for s in session.sets.all()
         )
 
-        overlap = muscle_groups.intersection(trained_groups)
+        overlap = muscle_groups & trained_groups
         if overlap:
-            groups_pt = [Exercise.MuscleGroupsChoices(g).label for g in overlap]
+            groups_pt = [
+                dict(Exercise.MuscleGroupsChoices.choices).get(g, g)
+                for g in overlap
+            ]
             warnings.append(
                 f"Atenção: Overtraining detectado. "
                 f"Grupos musculares {', '.join(groups_pt)} já treinados nas últimas 24h."
