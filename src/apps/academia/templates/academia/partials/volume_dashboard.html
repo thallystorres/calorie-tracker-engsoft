@@ -1,0 +1,23 @@
+<div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 mb-8">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-bold text-slate-800">Volume Semanal</h2>
+    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+      Últimos 7 dias
+    </span>
+  </div>
+
+  {% if breakdown %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for item in breakdown %}
+    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+      <p class="text-xs text-slate-500">{{ item.label }}</p>
+      <p class="text-2xl font-bold text-slate-800">{{ item.total_volume|floatformat:0 }} <span class="text-sm font-normal text-slate-500">kg·rep</span></p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
+    <p class="text-slate-500 text-sm">Nenhum treino registrado na última semana.</p>
+  </div>
+  {% endif %}
+</div>
