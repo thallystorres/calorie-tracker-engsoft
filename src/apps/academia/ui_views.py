@@ -32,19 +32,19 @@ def volume_dashboard_partial(request):
 def workout_history_partial(request):
     repo = get_workout_repository()
     sessions = repo.list_sessions_for_user(user=request.user)
-    from rest_framework.pagination import PageNumberPagination
-    paginator = PageNumberPagination()
-    page = paginator.paginate_queryset(sessions, request, view=workout_history_partial)
+    from django.core.paginator import Paginator
+    paginator = Paginator(sessions, 20)
+    page = paginator.get_page(request.GET.get("page", 1))
     return render(
         request,
         "academia/partials/workout_history.html",
         {
             "page": page,
-            "has_previous": paginator.page.has_previous() if page else False,
-            "has_next": paginator.page.has_next() if page else False,
-            "previous_page_number": paginator.page.previous_page_number() if page and paginator.page.has_previous() else None,
-            "next_page_number": paginator.page.next_page_number() if page and paginator.page.has_next() else None,
-            "count": paginator.page.paginator.count if page else 0,
+            "has_previous": page.has_previous(),
+            "has_next": page.has_next(),
+            "previous_page_number": page.previous_page_number() if page.has_previous() else None,
+            "next_page_number": page.next_page_number() if page.has_next() else None,
+            "count": paginator.count,
         },
     )
 
