@@ -7,15 +7,15 @@ handler500 = handlers.server_error
 handler404 = handlers.not_found
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("accounts/", include("apps.accounts.ui_urls")),
-    path("foods/", include("apps.foods.ui_urls")),
-    path("tracker/", include("apps.tracker.ui_urls")),
-    path("profiles/", include("apps.profiles.ui_urls")),
-    path("ai/", include("apps.ai_engine.ui_urls")),
-    path("api/accounts/", include("apps.accounts.urls")),
-    path("api/profiles/", include("apps.profiles.urls")),
-    path("api/foods/", include("apps.foods.urls")),
-    path("api/tracker/", include("apps.tracker.urls")),
-    path("api/ai/", include("apps.ai_engine.urls")),
+  path("admin/", admin.site.urls),
+  path("", include("apps.study_tracker.ui_urls")),
+  path("accounts/", include("apps.accounts.ui_urls", namespace="accounts-ui")),  # Mantido do framework core
+  path("profile/", include("apps.study_profiles.ui_urls")),
+  path("contents/", include("apps.contents.ui_urls", namespace="contents-ui")),
+  path("ai/", include("apps.study_ai_engine.ui_urls")),
+  path("api/accounts/", include("apps.accounts.urls")),
+  path("api/contents/", include("apps.contents.urls")),
+  path("api/profiles/", include("apps.study_profiles.urls")),
+  path("api/tracker/", include("apps.study_tracker.urls")),
+  path("api/ai/", include("apps.study_ai_engine.urls")),
 ]

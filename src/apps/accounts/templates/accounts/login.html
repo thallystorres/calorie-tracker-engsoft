@@ -18,16 +18,15 @@
           <div
             class="bg-white/10 backdrop-blur-md p-2.5 rounded-2xl border border-white/20"
           >
-            <span class="font-bold text-white">cIA</span>
+            <span class="font-bold text-white">eAI</span>
           </div>
-          <span class="text-3xl font-bold text-white">calorIA</span>
+          <span class="text-3xl font-bold text-white">EstudaAI</span>
         </div>
         <div>
           <h2 class="text-4xl font-semibold leading-tight mb-4 text-white">
-            Nutra seu corpo <br /><span
+            Aprenda e evolua <br /><span
               class="text-emerald-300 italic font-light"
-              >com inteligência.</span
-            >
+              >com inteligência.</span>
           </h2>
         </div>
       </div>
@@ -43,7 +42,7 @@
         <form
           hx-post="{% url 'accounts:login' %}"
           class="space-y-6"
-          data-success-redirect="{% url 'accounts-ui:profile' %}"
+          data-success-redirect="{% url 'study_tracker-ui:tracker' %}"
         >
           <div data-feedback="api-feedback"></div>
 
@@ -96,7 +95,7 @@
         </form>
 
         <div class="mt-12 text-center text-slate-500">
-          Novo no calorIA?
+          Novo no EstudaAI?
           <a
             href="{% url 'accounts-ui:register' %}"
             class="font-bold text-emerald-600"

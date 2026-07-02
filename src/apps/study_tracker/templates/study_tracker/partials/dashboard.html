@@ -1,0 +1,20 @@
+{% if profile_required %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 shadow rounded">
+        <p class="text-yellow-700"><strong>Aviso:</strong> Preencha seu <a href="{% url 'study_profiles-ui:profile' %}" class="underline">perfil de estudos</a> para visualizar o painel.</p>
+    </div>
+{% else %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 shadow rounded-lg">
+            <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wide">Meta Semanal</h3>
+            <p class="text-3xl font-bold text-gray-900 mt-1">{{ target_weekly }} <span class="text-base font-normal text-gray-600">min</span></p>
+        </div>
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 shadow rounded-lg">
+            <h3 class="text-sm font-semibold text-green-800 uppercase tracking-wide">Estudado Hoje</h3>
+            <p class="text-3xl font-bold text-gray-900 mt-1">{{ total_minutes_today }} <span class="text-base font-normal text-gray-600">min</span></p>
+        </div>
+        <div class="bg-purple-50 border-l-4 border-purple-500 p-4 shadow rounded-lg">
+            <h3 class="text-sm font-semibold text-purple-800 uppercase tracking-wide">Alvo Acertos</h3>
+            <p class="text-3xl font-bold text-gray-900 mt-1">{{ target_score }}%</p>
+        </div>
+    </div>
+{% endif %}

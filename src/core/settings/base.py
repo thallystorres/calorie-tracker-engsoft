@@ -29,10 +29,10 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "apps.accounts",
-    "apps.profiles",
-    "apps.foods",
-    "apps.tracker",
-    "apps.ai_engine",
+    #"apps.profiles",
+    #"apps.foods",
+    #"apps.tracker",
+    #"apps.ai_engine",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -40,6 +40,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "apps.contents",
+    "apps.study_profiles",
+    "apps.study_tracker",
+    "apps.study_ai_engine",
+
 ]
 
 JAZZMIN_SETTINGS = {

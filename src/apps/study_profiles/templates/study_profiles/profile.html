@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Meu Perfil | EstudaAI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <h2 class="text-2xl font-bold mb-6 text-gray-800">Configuração de Perfil</h2>
+
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <div id="message-area" class="mb-4"></div>
+
+        <form hx-post="{% url 'study_profiles-ui:save-profile' %}" hx-target="#message-area" hx-swap="innerHTML">
+            {% csrf_token %}
+            <div class="mb-5">
+                <label class="block text-gray-700 font-bold mb-2">Objetivo Principal</label>
+                <select name="goal" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                    <option value="CONCURSO" {% if profile.goal == 'CONCURSO' %}selected{% endif %}>Concurso Público</option>
+                    <option value="FACULDADE" {% if profile.goal == 'FACULDADE' %}selected{% endif %}>Ensino Superior / Faculdade</option>
+                    <option value="IDIOMA" {% if profile.goal == 'IDIOMA' %}selected{% endif %}>Aprender Idioma</option>
+                    <option value="PROFISSAO" {% if profile.goal == 'PROFISSAO' %}selected{% endif %}>Certificação / Profissional</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Disp. Semanal (Horas)</label>
+                    <input type="number" name="weekly_availability_hours" min="1"
+                           value="{{ profile.weekly_availability_hours|default:10 }}"
+                           class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Foco Contínuo (Minutos)</label>
+                    <input type="number" name="focus_limit_minutes" min="10"
+                           value="{{ profile.focus_limit_minutes|default:60 }}"
+                           class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
+                Salvar Perfil
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

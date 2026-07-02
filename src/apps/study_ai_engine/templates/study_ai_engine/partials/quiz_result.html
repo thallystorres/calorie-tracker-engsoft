@@ -1,0 +1,26 @@
+<div class="bg-indigo-50 p-6 rounded-lg border border-indigo-200 shadow-sm">
+    <h3 class="text-2xl font-bold text-indigo-900 mb-6 border-b border-indigo-200 pb-2">{{ quiz.titulo }}</h3>
+
+    <div class="space-y-6">
+        {% for questao in quiz.questoes %}
+        <div class="bg-white p-5 rounded border border-gray-200">
+            <p class="font-bold text-gray-800 mb-3">{{ forloop.counter }}. {{ questao.pergunta }}</p>
+            <ul class="space-y-2 mb-4">
+                {% for opcao in questao.opcoes %}
+                <li class="flex items-center p-2 rounded bg-gray-50 border border-gray-100">
+                    <input type="radio" name="q_{{ forloop.parentloop.counter }}" class="mr-3 text-indigo-600 focus:ring-indigo-500">
+                    <span class="text-gray-700">{{ opcao }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <details class="text-sm">
+                <summary class="text-indigo-600 font-semibold cursor-pointer outline-none">Mostrar Gabarito</summary>
+                <div class="mt-3 p-3 bg-green-50 border-l-4 border-green-500 text-green-900">
+                    <strong>Correta:</strong> {{ questao.resposta_correta }}<br>
+                    <span class="text-green-700 mt-1 block">{{ questao.explicacao }}</span>
+                </div>
+            </details>
+        </div>
+        {% endfor %}
+    </div>
+</div>

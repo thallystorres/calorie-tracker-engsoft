@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Diário de Estudos | EstudaAI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+
+    <div hx-get="{% url 'study_tracker-ui:dashboard' %}"
+         hx-trigger="load, sessionSaved from:body"
+         id="dashboard-container" class="mb-8">
+         <div class="animate-pulse bg-gray-200 h-24 rounded-lg"></div>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-gray-800">Registrar Sessão</h2>
+
+        <div id="session-feedback" class="mb-4"></div>
+
+        <form hx-post="{% url 'study_tracker-ui:save-session' %}" hx-target="#session-feedback" hx-swap="innerHTML">
+            {% csrf_token %}
+            <div class="mb-6 md:w-1/3">
+                <label class="block text-gray-700 font-bold mb-2">Estratégia</label>
+                <select name="strategy" class="w-full border-gray-300 rounded-md focus:ring-blue-500" required>
+                    <option value="POMODORO">Pomodoro</option>
+                    <option value="FEYNMAN">Técnica de Feynman</option>
+                    <option value="ACTIVE_RECALL">Active Recall</option>
+                    <option value="LEITURA">Leitura Ativa</option>
+                </select>
+            </div>
+
+            <div id="study-items-container" class="space-y-4 mb-4">
+                {% include "study_tracker/partials/study_item_form.html" with uid="init" %}
+            </div>
+
+            <button type="button"
+                    hx-get="{% url 'study_tracker-ui:add-item' %}"
+                    hx-target="#study-items-container"
+                    hx-swap="beforeend"
+                    class="text-blue-600 font-semibold mb-6 flex items-center hover:text-blue-800 transition">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Adicionar outro tópico
+            </button>
+
+            <button type="submit" class="bg-green-600 text-white font-bold py-2 px-6 rounded hover:bg-green-700 transition w-full md:w-auto">
+                Salvar Registro
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
