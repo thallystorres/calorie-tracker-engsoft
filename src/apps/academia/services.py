@@ -52,7 +52,7 @@ class VolumeMetricsService:
         return self._repo.get_volume_by_muscle_group(user=user, muscle_group=muscle_group)
 
     def get_weekly_volume_breakdown(self, user, weeks=1):
-        today = timezone.now().date()
+        today = timezone.localdate()
         week_ago = today - timedelta(days=7 * weeks)
         breakdown = []
         for key, label in Exercise.MuscleGroupsChoices.choices:
@@ -74,7 +74,7 @@ class GoalsService:
         self._repo = workout_repository
 
     def get_active_goals(self, user):
-        today = timezone.now().date()
+        today = timezone.localdate()
         goals = list(
             MuscleVolumeGoal.objects.filter(user=user, period_end__gte=today).order_by(
                 "-created_at"
@@ -95,7 +95,7 @@ class GoalsService:
         return goals
 
     def recalculate_goals(self, user):
-        today = timezone.now().date()
+        today = timezone.localdate()
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
         previous_week_start = week_start - timedelta(days=7)
