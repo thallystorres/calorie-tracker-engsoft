@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900">Progresso</h1>
+        <p class="text-sm text-slate-500 mt-1">Acompanhe seu volume semanal e suas metas por grupamento.</p>
+      </div>
+    </div>
+
+    <div
+      id="volume-panel"
+      class="mb-8"
+      hx-get="{% url 'academia-ui:dashboard' %}"
+      hx-trigger="load, workoutsUpdated from:body"
+      hx-target="this"
+      hx-swap="innerHTML"
+    >
+      <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
+        <p class="text-slate-500 text-sm">Carregando métricas...</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-slate-800">Metas de Volume</h2>
+        <button
+          class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+          hx-post="{% url 'academia-ui:goals-recalculate' %}"
+          hx-target="#goals-panel"
+          hx-swap="innerHTML"
+        >
+          Recalcular Metas
+        </button>
+      </div>
+      <div
+        id="goals-panel"
+        hx-get="{% url 'academia-ui:goals' %}"
+        hx-trigger="load, workoutsUpdated from:body"
+        hx-target="this"
+        hx-swap="innerHTML"
+      >
+        <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
+          <p class="text-slate-500 text-sm">Carregando metas...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

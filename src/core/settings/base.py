@@ -30,10 +30,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "apps.accounts",
     "apps.academia",
-    "apps.profiles",
-    "apps.foods",
-    "apps.tracker",
-    "apps.ai_engine",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -44,10 +40,10 @@ INSTALLED_APPS = [
 ]
 
 JAZZMIN_SETTINGS = {
-    "site_title": "CalorAI",
-    "site_header": "Contador de calorias inteligente",
-    "site_brand": "CalorAI",
-    "welcome_sign": "Bem-vindo ao CalorIA",
+    "site_title": "AcademIA",
+    "site_header": "AcademIA",
+    "site_brand": "AcademIA",
+    "welcome_sign": "Bem-vindo ao AcademIA",
     "copyright": "UFRN",
     "search_model": ["auth.User", "auth.Group"],
     "show_sidebar": True,
@@ -148,7 +144,7 @@ EMAIL_BACKEND = os.getenv(
         else "django.core.mail.backends.smtp.EmailBackend"
     ),
 )
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@caloria.local")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@academia.local")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
@@ -171,13 +167,4 @@ PASSWORD_RESET_MAX_AGE_SECONDS = int(
 )  # 1h
 PASSWORD_RESET_SALT = os.getenv("PASSWORD_RESET_SALT", "accounts.password-reset.v1")
 
-CELERY_BEAT_SCHEDULE = {
-    "reminder-emails-every-30-min": {
-        "task": "apps.tracker.tasks.send_reminder_emails",
-        "schedule": 60 * 30,
-    },
-    "excess-emails-every-4-hours": {
-        "task": "apps.tracker.tasks.send_excess_emails",
-        "schedule": 60 * 60 * 4,
-    },
-}
+CELERY_BEAT_SCHEDULE = {}

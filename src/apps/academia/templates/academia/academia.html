@@ -6,20 +6,6 @@
       <h1 class="text-3xl font-bold text-slate-900">Área de Treinos</h1>
     </div>
 
-    <!-- Volume Dashboard -->
-    <div
-      id="volume-panel"
-      class="mb-8"
-      hx-get="{% url 'academia-ui:dashboard' %}"
-      hx-trigger="load, workoutsUpdated from:body"
-      hx-target="this"
-      hx-swap="innerHTML"
-    >
-      <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
-        <p class="text-slate-500 text-sm">Carregando métricas...</p>
-      </div>
-    </div>
-
     <!-- AI Routine Generator -->
     <div class="bg-gradient-to-br from-slate-800 to-indigo-950 rounded-[2rem] shadow-lg border border-slate-700 p-8 mb-8 text-white relative overflow-hidden">
       <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -197,31 +183,6 @@
       </div>
     </div>
 
-    <!-- Goals -->
-    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-slate-800">Metas de Volume</h2>
-        <button
-          class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
-          hx-post="{% url 'academia-ui:goals-recalculate' %}"
-          hx-target="#goals-panel"
-          hx-swap="innerHTML"
-        >
-          Recalcular Metas
-        </button>
-      </div>
-      <div
-        id="goals-panel"
-        hx-get="{% url 'academia-ui:goals' %}"
-        hx-trigger="load, workoutsUpdated from:body"
-        hx-target="this"
-        hx-swap="innerHTML"
-      >
-        <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center">
-          <p class="text-slate-500 text-sm">Carregando metas...</p>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 

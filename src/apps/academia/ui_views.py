@@ -17,6 +17,12 @@ def academia_page(request):
 
 @require_GET
 @login_required
+def progress_page(request):
+    return render(request, "academia/progress.html")
+
+
+@require_GET
+@login_required
 def volume_dashboard_partial(request):
     service = get_volume_metrics_service()
     breakdown = service.get_weekly_volume_breakdown(user=request.user)
