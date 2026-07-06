@@ -11,7 +11,7 @@ from apps.academia.models import (
 from apps.academia.schemas import WorkoutPlanSchema
 from apps.academia.tools import search_exercises_in_catalog
 from core.ai.services import BaseAIGeneratorService
-from core.tracking.services import BaseTrackerService
+from core.tracking.services import BaseGoalService, BaseTrackerService
 
 
 class WorkoutTrackerService(BaseTrackerService):
@@ -63,7 +63,7 @@ class VolumeMetricsService:
         return breakdown
 
 
-class GoalsService:
+class GoalsService(BaseGoalService):
     INCREMENTS = {
         FitnessProfile.ExperienceLevelChoices.BEGINNER: 1.10,
         FitnessProfile.ExperienceLevelChoices.INTERMEDIARY: 1.07,
@@ -71,28 +71,21 @@ class GoalsService:
     }
 
     def __init__(self, workout_repository):
-        self._repo = workout_repository
+        super().__init__(repository=workout_repository)
 
-    def get_active_goals(self, user):
-        today = timezone.localdate()
-        goals = list(
-            MuscleVolumeGoal.objects.filter(user=user, period_end__gte=today).order_by(
-                "-created_at"
-            )
+    def get_today(self):
+        return timezone.localdate()
+
+    def get_goal_model(self):
+        return MuscleVolumeGoal
+
+    def get_current_value(self, user, goal):
+        return self._repo.get_volume_by_muscle_group(
+            user=user,
+            muscle_group=goal.muscle_group,
+            start_date=goal.period_start,
+            end_date=goal.period_end,
         )
-        for goal in goals:
-            current_value = self._repo.get_volume_by_muscle_group(
-                user=user,
-                muscle_group=goal.muscle_group,
-                start_date=goal.period_start,
-                end_date=goal.period_end,
-            )
-            is_achieved = goal.target_value > 0 and current_value >= goal.target_value
-            if goal.current_value != current_value or goal.is_achieved != is_achieved:
-                goal.current_value = current_value
-                goal.is_achieved = is_achieved
-                goal.save(update_fields=["current_value", "is_achieved"])
-        return goals
 
     def recalculate_goals(self, user):
         today = timezone.localdate()
@@ -134,7 +127,10 @@ class GoalsService:
             else:
                 continue
 
-            is_achieved = target > 0 and current_volume >= target
+            is_achieved = self.is_target_achieved(
+                target_value=target,
+                current_value=current_volume,
+            )
             goal_defaults = {
                 "target_value": target,
                 "current_value": current_volume,
