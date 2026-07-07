@@ -41,7 +41,7 @@ class NutritionalProfileRepository(BaseRepository[NutritionalProfile]):
     def list_diets(self, user: User) -> QuerySet[SavedDiet]:
         return SavedDiet.objects.filter(user=user).order_by("-created_at")
 
-    def list_recipes(self, user: User) -> QuerySet[SavedDiet]:
+    def list_recipes(self, user: User) -> QuerySet[SavedRecipe]:
         return SavedRecipe.objects.filter(user=user).order_by("-created_at")
 
     def list_weekly_plans(self, user: User) -> QuerySet[WeeklyPlan]:
