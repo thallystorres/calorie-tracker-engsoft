@@ -52,7 +52,7 @@ class NutritionalProfileRepository(BaseRepository[NutritionalProfile]):
             "content", flat=True
         )
 
-    def list_recipes_from_id_list(self, user: User, id_list) -> QuerySet[SavedDiet]:
-        SavedRecipe.objects.filter(id__in=id_list, user=user).values_list(
+    def list_recipes_from_id_list(self, user: User, id_list) -> QuerySet[SavedRecipe]:
+        return SavedRecipe.objects.filter(id__in=id_list, user=user).values_list(
             "content", flat=True
         )
